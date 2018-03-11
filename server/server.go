@@ -42,20 +42,27 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 }
 
+func getMux() (mux *http.ServeMux) {
+	mux = http.NewServeMux()
+
+	mux.Handle("/", http.HandlerFunc(handler))
+
+	return
+}
+
 // Run : run sincronice server
 func Run() {
 	// suscripción SIGINT
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
 
-	mux := http.NewServeMux()
-	mux.Handle("/", http.HandlerFunc(handler))
+	mux := getMux()
 
 	srv := &http.Server{Addr: ":8081", Handler: mux}
 
 	// metodo concurrente
 	go func() {
-		if err := srv.ListenAndServeTLS("cert.pem", "key.pem"); err != nil {
+		if err := srv.ListenAndServeTLS("server.crt", "server.key"); err != nil {
 			log.Printf("listen: %s\n", err)
 		}
 	}()
