@@ -1,21 +1,13 @@
-package server
+package main
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"time"
 )
-
-func chk(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
 
 type resp struct {
 	Ok  bool   // true -> correcto, false -> error
@@ -50,8 +42,8 @@ func getMux() (mux *http.ServeMux) {
 	return
 }
 
-// Run : run sincronice server
-func Run() {
+// RunServer : run sincronice server
+func RunServer() {
 	// suscripción SIGINT
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
@@ -71,9 +63,9 @@ func Run() {
 	log.Println("Apagando servidor ...")
 
 	// apagar servidor de forma segura
-	ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
-	fnc()
-	srv.Shutdown(ctx)
+	// ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
+	// fnc()
+	// srv.Shutdown(ctx)
 
 	log.Println("Servidor detenido correctamente")
 }

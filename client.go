@@ -1,4 +1,4 @@
-package client
+package main
 
 import (
 	"crypto/tls"
@@ -15,8 +15,8 @@ func chk(e error) {
 	}
 }
 
-// Run : run sincronice client
-func Run() {
+// RunClient : run sincronice client
+func RunClient() {
 
 	/* creamos un cliente especial que no comprueba la validez de los certificados
 	esto es necesario por que usamos certificados autofirmados (para pruebas) */

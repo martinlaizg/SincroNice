@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"sincronice/client"
-	"sincronice/server"
 )
 
 func main() {
@@ -15,10 +13,10 @@ func main() {
 		switch os.Args[1] {
 		case "srv":
 			fmt.Println("Entrando en modo servidor...")
-			server.Run()
+			RunServer()
 		case "cli":
 			fmt.Println("Entrando en modo cliente...")
-			client.Run()
+			RunClient()
 		default:
 			fmt.Println("Parámetro '", os.Args[1], "' desconocido. ", s)
 		}
