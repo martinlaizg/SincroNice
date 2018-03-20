@@ -34,3 +34,15 @@
 
 ## Bibliografía
 - [HTTPS Go Lang](https://www.kaihag.com/https-and-go/)
+
+
+
+
+# Pasos de seguridad
+1. Cliente realiza hash (sha256) sobre su contraseña.
+2. Se transmite el paquete mediante HTTPS.
+3. El servidor realiza el hash (bcrypt o scrypt) con salt.
+4. El servidor cifra la contraseña (AES) para almacenarla en el servidor.
+
+## Opcional
+- Con el token de verificación en dos pasos, usarlo para mantener la sesión.
