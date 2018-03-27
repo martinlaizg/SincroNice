@@ -23,11 +23,11 @@
 - Sistema de autenticación seguro
 - Cifrado de ficheros para su almacenamiento
 - Logica de aplicación mínima
+- Versión de ficheros
+- Integración con otras APIs
 
 ## Requisitos adicionales
 - Doble autenticación
-- Versión de ficheros
-- Integración con otras APIs
 - Sincronización automática
 - Monitorización del sistema
 - Cifrado con conocimiento cero (el servidor no conoce las contraseñas)
