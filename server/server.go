@@ -44,7 +44,7 @@ func getMux() (mux *http.ServeMux) {
 	mux = http.NewServeMux()
 
 	mux.Handle("/", http.HandlerFunc(handler))
-
+	mux.Handle("/login", http.HandlerFunc(loginHandler))
 	return
 }
 

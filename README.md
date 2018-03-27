@@ -25,9 +25,9 @@
 - Logica de aplicación mínima
 - Versión de ficheros
 - Integración con otras APIs
+- Doble autenticación
 
 ## Requisitos adicionales
-- Doble autenticación
 - Sincronización automática
 - Monitorización del sistema
 - Cifrado con conocimiento cero (el servidor no conoce las contraseñas)
