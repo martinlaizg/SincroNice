@@ -14,6 +14,12 @@ type resp struct {
 	Msg string // mensaje adicional
 }
 
+func chk(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
 func response(w io.Writer, ok bool, msg string) {
 	r := resp{Ok: ok, Msg: msg}    // formateamos respuesta
 	rJSON, err := json.Marshal(&r) // codificamos en JSON
@@ -43,7 +49,7 @@ func getMux() (mux *http.ServeMux) {
 }
 
 // RunServer : run sincronice server
-func RunServer() {
+func main() {
 	// suscripción SIGINT
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)

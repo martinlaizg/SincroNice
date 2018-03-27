@@ -16,7 +16,7 @@ func chk(e error) {
 }
 
 // RunClient : run sincronice client
-func RunClient() {
+func main() {
 
 	/* creamos un cliente especial que no comprueba la validez de los certificados
 	esto es necesario por que usamos certificados autofirmados (para pruebas) */
