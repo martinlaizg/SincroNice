@@ -1,6 +1,7 @@
 package main
 
 import (
+	"SincroNice/types"
 	"encoding/json"
 	"io"
 	"log"
@@ -9,10 +10,7 @@ import (
 	"os/signal"
 )
 
-type resp struct {
-	Ok  bool   // true -> correcto, false -> error
-	Msg string // mensaje adicional
-}
+var port = "8081"
 
 func chk(e error) {
 	if e != nil {
@@ -20,43 +18,32 @@ func chk(e error) {
 	}
 }
 
-func response(w io.Writer, ok bool, msg string) {
-	r := resp{Ok: ok, Msg: msg}    // formateamos respuesta
-	rJSON, err := json.Marshal(&r) // codificamos en JSON
-	chk(err)                       // comprobamos error
-	w.Write(rJSON)                 // escribimos el JSON resultante
-}
-
-func handler(w http.ResponseWriter, req *http.Request) {
-	req.ParseForm()                              // es necesario parsear el formulario
-	w.Header().Set("Content-Type", "text/plain") // cabecera estándar
-
-	switch req.Form.Get("cmd") { // comprobamos comando desde el cliente
-	case "hola": // ** registro
-		response(w, true, "Hola "+req.Form.Get("mensaje"))
-	default:
-		response(w, false, "Comando inválido")
-	}
-
+func response(w io.Writer, status bool, msg string) {
+	r := types.Resp{Status: status, Msg: msg} // formateamos respuesta
+	rJSON, err := json.Marshal(&r)            // codificamos en JSON
+	chk(err)                                  // comprobamos error
+	w.Write(rJSON)                            // escribimos el JSON resultante
 }
 
 func getMux() (mux *http.ServeMux) {
 	mux = http.NewServeMux()
 
-	mux.Handle("/", http.HandlerFunc(handler))
+	//mux.Handle("/", http.HandlerFunc(handler))
 	mux.Handle("/login", http.HandlerFunc(loginHandler))
+
 	return
 }
 
 // RunServer : run sincronice server
 func main() {
+	log.Println("Running server on port: " + port)
 	// suscripción SIGINT
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
 
 	mux := getMux()
 
-	srv := &http.Server{Addr: ":8081", Handler: mux}
+	srv := &http.Server{Addr: ":" + port, Handler: mux}
 
 	// metodo concurrente
 	go func() {
@@ -66,12 +53,11 @@ func main() {
 	}()
 
 	<-stopChan // espera señal SIGINT
-	log.Println("Apagando servidor ...")
+	log.Println("Shutdown server...")
 
 	// apagar servidor de forma segura
 	// ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
 	// fnc()
 	// srv.Shutdown(ctx)
-
-	log.Println("Servidor detenido correctamente")
+	// log.Println("Servidor detenido correctamente")
 }

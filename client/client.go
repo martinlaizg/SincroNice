@@ -1,17 +1,33 @@
 package main
 
 import (
+	"SincroNice/types"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/url"
 
 	"github.com/howeyc/gopass"
 )
 
 var baseURL = "https://localhost:8081"
 
+var client *http.Client
+
 func chk(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+// send : enva {data} a la url localhost:8081/{endpoint}
+func send(endpoint string, data url.Values) *http.Response {
+	r, err := client.PostForm(baseURL+endpoint, data)
+	chk(err)
+	return r
 }
 
 func menu() {
@@ -23,29 +39,33 @@ func menu() {
 	fmt.Printf("Pass: ")
 	pass, err := gopass.GetPasswdMasked()
 	chk(err)
-	// var pass string
-	// fmt.Scanf("%s\n", &pass)
-	fmt.Println("Bienvenido " + usr)
-	fmt.Println("Pass " + string(pass))
+
+	log.Println("Login as " + usr)
+
+	data := url.Values{}
+	data.Set("usr", usr)
+	data.Set("pass", string(pass))
+
+	response := send("/login", data)
+	bData, err := ioutil.ReadAll(response.Body)
+	chk(err)
+	var rData types.Resp
+	err = json.Unmarshal(bData, &rData)
+	chk(err)
+
+	fmt.Printf("%v\n", rData.Msg)
+
+}
+
+func createClient() {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client = &http.Client{Transport: tr}
 }
 
 // RunClient : run sincronice client
 func main() {
+	createClient()
 	menu()
-	/* creamos un cliente especial que no comprueba la validez de los certificados
-	esto es necesario por que usamos certificados autofirmados (para pruebas) */
-	/* tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-
-	// ** ejemplo de registro
-	data := url.Values{}      // estructura para contener los valores
-	data.Set("usr", "Martin") // comando (string)
-	data.Set("pass", "PASS")  // usuario (string)
-
-	r, err := client.PostForm(baseURL+"/login", data) // enviamos por POST
-	chk(err)
-	io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-	fmt.Println()*/
 }
