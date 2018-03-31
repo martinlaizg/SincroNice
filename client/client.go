@@ -53,7 +53,11 @@ func menu() {
 	err = json.Unmarshal(bData, &rData)
 	chk(err)
 
-	fmt.Printf("%v\n", rData.Msg)
+	if rData.Status == true {
+		fmt.Printf("Logeado correctamente\n")
+		return
+	}
+	fmt.Printf("Error al loguear: %v\n", rData.Msg)
 
 }
 
