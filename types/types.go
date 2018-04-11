@@ -1,12 +1,14 @@
 package types
 
-type Resp struct {
+// Response : base de la respuesta al cliente
+type Response struct {
 	Status bool
 	Msg    string
 }
 
+// Heredado : estructura de respuesta heredada (es un ejemplo)
 type Heredado struct {
-	Resp
+	Response
 	token string
 }
 
@@ -16,15 +18,18 @@ type User struct {
 	username string
 	name     string
 	token    string
+	password string
 }
 
 // Folder :
 type Folder struct {
-	id      string
-	name    string
-	path    string
-	folders []Folder
-	files   []File
+	ID      string
+	Name    string
+	Path    string
+	Created string
+	Updated string
+	Folders []Folder
+	Files   []File
 }
 
 // File :
