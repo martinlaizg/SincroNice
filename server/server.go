@@ -2,15 +2,22 @@ package main
 
 import (
 	"SincroNice/types"
+	"context"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 )
 
 var port = "8081"
+
+var users map[string]types.User
+var folders map[string]types.Folder
+var files map[string]types.File
 
 func chk(e error) {
 	if e != nil {
@@ -19,10 +26,10 @@ func chk(e error) {
 }
 
 func response(w io.Writer, status bool, msg string) {
-	r := types.Resp{Status: status, Msg: msg} // formateamos respuesta
-	rJSON, err := json.Marshal(&r)            // codificamos en JSON
-	chk(err)                                  // comprobamos error
-	w.Write(rJSON)                            // escribimos el JSON resultante
+	r := types.Response{Status: status, Msg: msg} // formateamos respuesta
+	rJSON, err := json.Marshal(&r)                // codificamos en JSON
+	chk(err)                                      // comprobamos error
+	w.Write(rJSON)                                // escribimos el JSON resultante
 }
 
 func getMux() (mux *http.ServeMux) {
@@ -36,6 +43,8 @@ func getMux() (mux *http.ServeMux) {
 
 // RunServer : run sincronice server
 func main() {
+	loadData()
+
 	log.Println("Running server on port: " + port)
 	// suscripción SIGINT
 	stopChan := make(chan os.Signal)
@@ -53,11 +62,46 @@ func main() {
 	}()
 
 	<-stopChan // espera señal SIGINT
-	log.Println("Shutdown server...")
+	log.Println("\n\nShutdown server...")
 
 	// apagar servidor de forma segura
-	// ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
-	// fnc()
-	// srv.Shutdown(ctx)
-	// log.Println("Servidor detenido correctamente")
+	ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
+	fnc()
+	srv.Shutdown(ctx)
+	saveData()
+	log.Println("Servidor detenido correctamente")
+}
+
+func loadData() {
+	log.Println("Loading data from JSON...")
+	raw, err := ioutil.ReadFile("./users.json")
+	chk(err)
+	err = json.Unmarshal(raw, &users)
+	chk(err)
+	raw, err = ioutil.ReadFile("./folders.json")
+	chk(err)
+	err = json.Unmarshal(raw, &folders)
+	chk(err)
+	raw, err = ioutil.ReadFile("./files.json")
+	chk(err)
+	err = json.Unmarshal(raw, &files)
+	chk(err)
+	log.Println("Data loaded")
+}
+
+func saveData() {
+	log.Println("Saving data to JSON...")
+	raw, err := json.Marshal(users)
+	chk(err)
+	err = ioutil.WriteFile("./db/users.json", raw, 0777)
+	chk(err)
+	raw, err = json.Marshal(folders)
+	chk(err)
+	err = ioutil.WriteFile("./db/folders.json", raw, 0777)
+	chk(err)
+	raw, err = json.Marshal(files)
+	chk(err)
+	err = ioutil.WriteFile("./db/files.json", raw, 0777)
+	chk(err)
+	log.Println("Data saved")
 }
