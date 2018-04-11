@@ -3,6 +3,7 @@ package main
 import (
 	"SincroNice/types"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -37,6 +38,7 @@ func getMux() (mux *http.ServeMux) {
 
 	//mux.Handle("/", http.HandlerFunc(handler))
 	mux.Handle("/login", http.HandlerFunc(loginHandler))
+	mux.Handle("/register", http.HandlerFunc(registerHandler))
 
 	return
 }
@@ -104,4 +106,14 @@ func saveData() {
 	err = ioutil.WriteFile("./db/files.json", raw, 0777)
 	chk(err)
 	log.Println("Data saved")
+}
+
+func base64Encode(data []byte) string {
+	return base64.StdEncoding.EncodeToString(data)
+}
+
+func base64Decode(s string) []byte {
+	b, err := base64.StdEncoding.DecodeString(s)
+	chk(err)
+	return b
 }
