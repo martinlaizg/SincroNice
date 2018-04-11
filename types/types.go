@@ -14,8 +14,6 @@ type Heredado struct {
 
 // User : tipo de usuario
 type User struct {
-	ID       string
-	Username string
 	Name     string
 	Token    string
 	Password string

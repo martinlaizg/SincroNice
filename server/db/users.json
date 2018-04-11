@@ -1,1 +1,12 @@
-{"FF+UvSTzF+iAGUwlxF875dJ7gHROzj1Je+GX7Wl6":{"ID":"FF+UvSTzF+iAGUwlxF875dJ7gHROzj1Je+GX7Wl6","Username":"martinlaizg","Name":"Martin Laiz Gómez","Token":"","Password":"mipass"}}
+{
+	"martinlaiz": {
+		"Name": "Martin Laiz Gómez",
+		"Token": "",
+		"Password": "mipass"
+	},
+	"martinlaizg": {
+		"Name": "Martin Laiz Gómez",
+		"Token": "",
+		"Password": "mipass"
+	}
+}
