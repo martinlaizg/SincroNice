@@ -74,15 +74,15 @@ func main() {
 
 func loadData() {
 	log.Println("Loading data from JSON...")
-	raw, err := ioutil.ReadFile("./users.json")
+	raw, err := ioutil.ReadFile("./db/users.json")
 	chk(err)
 	err = json.Unmarshal(raw, &users)
 	chk(err)
-	raw, err = ioutil.ReadFile("./folders.json")
+	raw, err = ioutil.ReadFile("./db/folders.json")
 	chk(err)
 	err = json.Unmarshal(raw, &folders)
 	chk(err)
-	raw, err = ioutil.ReadFile("./files.json")
+	raw, err = ioutil.ReadFile("./db/files.json")
 	chk(err)
 	err = json.Unmarshal(raw, &files)
 	chk(err)
