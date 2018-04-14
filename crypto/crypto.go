@@ -27,21 +27,19 @@ func Decode64(s string) []byte {
 }
 
 // Scrypt : genera salt y obtiene clave derivada
-func Scrypt(pass []byte) (dk string, salt string) {
-	bsalt := make([]byte, 32)
-	_, err := rand.Read(bsalt)
+func Scrypt(pass []byte) (dk []byte, salt []byte) {
+	salt = make([]byte, 32)
+	_, err := rand.Read(salt)
 	chk(err)
 
-	key, err := scrypt.Key(pass, bsalt, 1<<15, 8, 1, 32)
+	dk, err = scrypt.Key(pass, salt, 1<<15, 8, 1, 32)
 	chk(err)
-	dk = string(key)
-	salt = string(bsalt)
 	return
 }
 
 // ChkScrypt : comprueba que la contraseña sea correcta
-func ChkScrypt(usrpass string, salt string, pass string) bool {
-	newpass, err := scrypt.Key([]byte(pass), []byte(salt), 1<<15, 8, 1, 32)
+func ChkScrypt(usrpass []byte, salt []byte, pass []byte) bool {
+	newpass, err := scrypt.Key(pass, salt, 1<<15, 8, 1, 32)
 	chk(err)
-	return usrpass == string(newpass)
+	return string(usrpass) == string(newpass)
 }

@@ -14,7 +14,7 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 
 	email := string(crypto.Decode64(req.Form.Get("email")))
 	log.Println("Try login as " + email)
-	password := string(crypto.Decode64(req.Form.Get("password")))
+	password := crypto.Decode64(req.Form.Get("password"))
 	user, exist := users[email]
 	if !exist {
 		response(w, false, "No existe ese usuario")

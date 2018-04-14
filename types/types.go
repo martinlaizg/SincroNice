@@ -16,8 +16,8 @@ type Heredado struct {
 type User struct {
 	Name       string
 	Token      string
-	Password   string
-	Salt       string
+	Password   []byte
+	Salt       []byte
 	MainFolder *Folder
 }
 
