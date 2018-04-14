@@ -1,30 +1,57 @@
 package main
 
 import (
+	"SincroNice/crypto"
+	"SincroNice/types"
 	"log"
 	"net/http"
 )
 
-// login : login valida usuario, recibe usr (el usuario en claro) y pass (la contraseña en claro)
-func login(usr string, pass string) bool {
-	if usr == "Martin" && pass == "PASS" {
-		return true
-	}
-	return false
-}
-
 // loginHandler : manejador de la peticion a /login
 func loginHandler(w http.ResponseWriter, req *http.Request) {
-	req.ParseForm() // es necesario parsear el formulario
-	usr := req.Form.Get("usr")
-	pass := req.Form.Get("pass")
-	log.Println(usr, pass)
-	logged := login(usr, pass)
-	msg := "OK"
-	if logged == false {
-		msg = "Usuario y contraseña incorrectos"
-	}
+	req.ParseForm()
 	w.Header().Set("Content-Type", "application/json")
-	response(w, logged, msg)
 
+	email := string(crypto.Decode64(req.Form.Get("email")))
+	log.Println("Try login as " + email)
+	password := crypto.Decode64(req.Form.Get("password"))
+	user, exist := users[email]
+	if !exist {
+		response(w, false, "No existe ese usuario")
+		log.Println("Fail login, user " + email + " not exist")
+		return
+	}
+	auth := crypto.ChkScrypt(user.Password, user.Salt, password)
+
+	if auth {
+		response(w, true, "Acceso concedido")
+		log.Println("User " + email + " logging successful")
+		return
+	}
+	response(w, false, "Acceso denegado")
+	log.Println("Fail login, fail password for user " + email)
+}
+
+func registerHandler(w http.ResponseWriter, req *http.Request) {
+	log.Println("User try registry")
+	req.ParseForm()
+	w.Header().Set("Content-Type", "application/json")
+
+	name := string(crypto.Decode64(req.Form.Get("name")))
+	email := string(crypto.Decode64(req.Form.Get("email")))
+	pass := crypto.Decode64(req.Form.Get("password"))
+	dk, salt := crypto.Scrypt(pass)
+
+	if _, exist := users[email]; exist {
+		response(w, false, "ya existe un usuario con el mismo nombre de usuario")
+		log.Println("Fail registry, user " + email + " already exist")
+		return
+	}
+	user := types.User{
+		Name:     name,
+		Password: dk,
+		Salt:     salt}
+	users[email] = user
+	response(w, true, "registrado correctamente")
+	log.Println("User " + email + " registry successful")
 }

@@ -12,28 +12,29 @@ type Heredado struct {
 	token string
 }
 
-// User :
+// User : tipo de usuario
 type User struct {
-	id       string
-	username string
-	name     string
-	token    string
-	password string
+	Name       string
+	Token      string
+	Password   []byte
+	Salt       []byte
+	MainFolder *Folder
 }
 
-// Folder :
+// Folder : tipo de carpeta
 type Folder struct {
 	ID      string
+	UserID  string
 	Name    string
 	Path    string
 	Created string
 	Updated string
-	Folders []Folder
-	Files   []File
+	Folders []*Folder
+	Files   []*File
 }
 
-// File :
+// File : tipo de fichero
 type File struct {
-	id       string
-	folderID string
+	ID       string
+	FolderID string
 }
