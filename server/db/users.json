@@ -1,1 +1,32 @@
-{"martinlaizg":{"Name":"MartinLaizGomez","Token":"","Password":"v9P9EMdCBDCC/CoUZ3O7pd4ikvTj9/k68Wma38VppPg=","Salt":"dNF06H8Rd58q3r6qWrsWgyK7lgDZ1TEg3DkFBQMa+Yk=","MainFolder":null}}
+{
+    "martinlaizg": {
+        "Name": "MartinLaizGomez",
+        "Token": "",
+        "Password": "v9P9EMdCBDCC/CoUZ3O7pd4ikvTj9/k68Wma38VppPg=",
+        "Salt": "dNF06H8Rd58q3r6qWrsWgyK7lgDZ1TEg3DkFBQMa+Yk=",
+        "MainFolder": null
+    },
+    "prueba": {
+        "Name": "prueba",
+        "Token": "",
+        "Password": "klwjN5b43iCTWtLeuW7DuxATtAvSW0yemngmyD2L6wQ=",
+        "Salt": "kIW7ZAc8S4FDc2sE7P8OZyVVL6DsXh3Hjaqi88R9Rh0=",
+        "MainFolder": {
+            "ID": 1,
+            "UserEmail": "prueba",
+            "Name": "my-unit",
+            "Path": "/",
+            "Created": "2018-04-16 13:43:24.1542143 +0000 UTC",
+            "Updated": "2018-04-16 13:43:24.15421806 +0000 UTC",
+            "Folders": null,
+            "Files": null
+        }
+    },
+    "rmm118@gcloud.ua.es": {
+        "Name": "Ramsés",
+        "Token": "",
+        "Password": "+4e7v3Po/JtoTYj6+jv9en+jh0hr3NHWOtcH0UqNO3Q=",
+        "Salt": "C9TT2mY7xzrGLZVViKulLsK1UZ0UCnyib8CjAlXsBQI=",
+        "MainFolder": null
+    }
+}

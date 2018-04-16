@@ -5,6 +5,7 @@ import (
 	"SincroNice/types"
 	"log"
 	"net/http"
+	"time"
 )
 
 // loginHandler : manejador de la peticion a /login
@@ -47,10 +48,19 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		log.Println("Fail registry, user " + email + " already exist")
 		return
 	}
+	folder := types.Folder{
+		ID:        len(folders) + 1,
+		UserEmail: email,
+		Name:      "my-unit",
+		Path:      "/",
+		Created:   time.Now().UTC().String(),
+		Updated:   time.Now().UTC().String()}
+	folders[email] = folder
 	user := types.User{
-		Name:     name,
-		Password: dk,
-		Salt:     salt}
+		Name:       name,
+		Password:   dk,
+		Salt:       salt,
+		MainFolder: &folder}
 	users[email] = user
 	response(w, true, "registrado correctamente")
 	log.Println("User " + email + " registry successful")

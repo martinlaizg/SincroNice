@@ -23,14 +23,14 @@ type User struct {
 
 // Folder : tipo de carpeta
 type Folder struct {
-	ID      string
-	UserID  string
-	Name    string
-	Path    string
-	Created string
-	Updated string
-	Folders []*Folder
-	Files   []*File
+	ID        int
+	UserEmail string
+	Name      string
+	Path      string
+	Created   string
+	Updated   string
+	Folders   []*Folder
+	Files     []*File
 }
 
 // File : tipo de fichero

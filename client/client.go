@@ -32,7 +32,7 @@ func send(endpoint string, data url.Values) *http.Response {
 	return r
 }
 
-func login() {
+func login() bool {
 	fmt.Printf("\nLogin\n")
 	fmt.Print("Email: ")
 	var email string
@@ -58,9 +58,10 @@ func login() {
 
 	if rData.Status == true {
 		fmt.Printf("Logeado correctamente\n")
-		return
+		return true
 	}
-	fmt.Printf("Error al loguear: %v\n", rData.Msg)
+	fmt.Printf("Error al loguear: %v\n\n", rData.Msg)
+	return false
 }
 
 func registry() {
@@ -98,15 +99,29 @@ func registry() {
 	fmt.Printf("Error al registrarse: %v\n", rData.Msg)
 }
 
-func menu() {
-
-}
-
 func createClient() {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client = &http.Client{Transport: tr}
+}
+
+func loggedMenu() {
+	fmt.Printf("\nBienvenido a su espacio personal\n\n")
+
+	opt := ""
+	for opt != "q" {
+		fmt.Printf("1 - Explorar mi espacio\nq - Salir\nOpcion: ")
+		fmt.Scanf("%s\n", &opt)
+		switch opt {
+		case "1":
+			fmt.Println("\nExplorando carpeta.")
+		case "q":
+			fmt.Println("\nAdios")
+		default:
+			fmt.Println("\nIntoduzca una opción correcta")
+		}
+	}
 }
 
 // RunClient : run sincronice client
@@ -116,12 +131,13 @@ func main() {
 
 	opt := ""
 	for opt != "q" {
-
 		fmt.Printf("1 - Login\n2 - Registro\nq - Salir\nOpcion: ")
 		fmt.Scanf("%s\n", &opt)
 		switch opt {
 		case "1":
-			login()
+			if login() {
+				loggedMenu()
+			}
 		case "2":
 			registry()
 		case "q":
