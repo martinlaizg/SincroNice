@@ -2,22 +2,29 @@ package main
 
 import (
 	"SincroNice/types"
-	"context"
+	"crypto/md5"
+	"fmt"
+	"html/template"
+	"strconv"
+	"time"
+	//"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/textproto"
 	"os"
 	"os/signal"
-	"time"
+	//"time"
 )
 
-var port = "8081"
-
-var users map[string]types.User
-var folders map[string]types.Folder
-var files map[string]types.File
+var (
+	users   map[string]types.User
+	folders map[string]types.Folder
+	files   map[string]types.File
+	port    = "8081"
+)
 
 func chk(e error) {
 	if e != nil {
@@ -44,6 +51,7 @@ func getMux() (mux *http.ServeMux) {
 // RunServer : run sincronice server
 func main() {
 	loadData()
+	defer saveData()
 
 	log.Println("Running server on port: " + port)
 	// suscripción SIGINT
@@ -65,10 +73,9 @@ func main() {
 	log.Println("\n\nShutdown server...")
 
 	// apagar servidor de forma segura
-	ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
-	fnc()
-	srv.Shutdown(ctx)
-	saveData()
+	// ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
+	// fnc()
+	// srv.Shutdown(ctx)
 	log.Println("Servidor detenido correctamente")
 }
 
@@ -105,3 +112,43 @@ func saveData() {
 	chk(err)
 	log.Println("Data saved")
 }
+
+//http.HandleFunc("/upload", upload)
+
+// upload logic
+func upload(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("method:", r.Method)
+	if r.Method == "GET" {
+		crutime := time.Now().Unix()
+		h := md5.New()
+		io.WriteString(h, strconv.FormatInt(crutime, 10))
+		token := fmt.Sprintf("%x", h.Sum(nil))
+
+		t, _ := template.ParseFiles("upload.gtpl")
+		t.Execute(w, token)
+	} else {
+		r.ParseMultipartForm(32 << 20)
+		file, handler, err := r.FormFile("uploadfile")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer file.Close()
+		fmt.Fprintf(w, "%v", handler.Header)
+		f, err := os.OpenFile("./test/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer f.Close()
+		io.Copy(f, file)
+	}
+}
+
+type FileHeader struct {
+	Filename string
+	Header   textproto.MIMEHeader
+	// contains filtered or unexported fields
+}
+
+//https://astaxie.gitbooks.io/build-web-application-with-golang/en/04.5.html
