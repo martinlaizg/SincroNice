@@ -49,14 +49,14 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	folder := types.Folder{
-		ID:        len(folders) + 1,
-		UserEmail: email,
-		Name:      "my-unit",
-		Path:      "/",
-		Created:   time.Now().UTC().String(),
-		Updated:   time.Now().UTC().String()}
-	folders[email] = folder
+		UserID:  len(users) + 1,
+		Name:    "my-unit",
+		Path:    "/",
+		Created: time.Now().UTC().String(),
+		Updated: time.Now().UTC().String()}
+	folders[len(folders)+1] = folder
 	user := types.User{
+		ID:         len(users) + 1,
 		Name:       name,
 		Password:   dk,
 		Salt:       salt,

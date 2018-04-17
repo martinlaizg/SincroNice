@@ -19,6 +19,8 @@ var baseURL = "https://localhost:8081"
 
 var client *http.Client
 
+var emailUsuarioLogeado = ""
+
 func chk(e error) {
 	if e != nil {
 		panic(e)
@@ -58,6 +60,7 @@ func login() bool {
 
 	if rData.Status == true {
 		fmt.Printf("Logeado correctamente\n")
+		emailUsuarioLogeado = email
 		return true
 	}
 	fmt.Printf("Error al loguear: %v\n\n", rData.Msg)
@@ -93,7 +96,7 @@ func registry() {
 	chk(err)
 
 	if rData.Status == true {
-		fmt.Printf("Registrado correctamente\n")
+		fmt.Printf("Registrado correctamente\n\n")
 		return
 	}
 	fmt.Printf("Error al registrarse: %v\n", rData.Msg)
@@ -106,8 +109,13 @@ func createClient() {
 	client = &http.Client{Transport: tr}
 }
 
+func explorarMiUnidad() {
+	fmt.Println("\nBuscando carpetas...")
+
+}
+
 func loggedMenu() {
-	fmt.Printf("\nBienvenido a su espacio personal\n\n")
+	fmt.Printf("\nBienvenido a su espacio personal " + emailUsuarioLogeado + "\n\n")
 
 	opt := ""
 	for opt != "q" {
@@ -115,9 +123,9 @@ func loggedMenu() {
 		fmt.Scanf("%s\n", &opt)
 		switch opt {
 		case "1":
-			fmt.Println("\nExplorando carpeta.")
+			explorarMiUnidad()
 		case "q":
-			fmt.Println("\nAdios")
+			fmt.Println("\nHasta la próxima " + emailUsuarioLogeado + "\n")
 		default:
 			fmt.Println("\nIntoduzca una opción correcta")
 		}

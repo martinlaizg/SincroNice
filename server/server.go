@@ -11,12 +11,14 @@ import (
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 var port = "8081"
 
 var users map[string]types.User
-var folders map[string]types.Folder
+var folders map[int]types.Folder
 var files map[string]types.File
 
 func chk(e error) {
@@ -32,13 +34,27 @@ func response(w io.Writer, status bool, msg string) {
 	w.Write(rJSON)                                // escribimos el JSON resultante
 }
 
-func getMux() (mux *http.ServeMux) {
-	mux = http.NewServeMux()
+func userShow(w http.ResponseWriter, req *http.Request) {
+	log.Println("User try to get the folders and files.")
+	req.ParseForm()
+	w.Header().Set("Content-Type", "application/json")
 
-	mux.Handle("/login", http.HandlerFunc(loginHandler))
-	mux.Handle("/register", http.HandlerFunc(registerHandler))
+	vars := mux.Vars(req)
+	userID := vars["userId"]
+	user, exists := users[userID]
+	if !exists {
+		response(w, false, "No existe el usuario")
+		log.Println("Failed to search user files.")
+		return
+	}
+	resp, err := json.Marshal(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	return
+	w.Write(resp)
+	log.Println("It has been possible to find the user's space")
 }
 
 // RunServer : run sincronice server
@@ -50,9 +66,12 @@ func main() {
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
 
-	mux := getMux()
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/login", loginHandler)
+	router.HandleFunc("/register", registerHandler)
+	router.HandleFunc("/u/{userId}", userShow)
 
-	srv := &http.Server{Addr: ":" + port, Handler: mux}
+	srv := &http.Server{Addr: ":" + port, Handler: router}
 
 	// metodo concurrente
 	go func() {
