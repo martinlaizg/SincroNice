@@ -1,11 +1,17 @@
 package crypto
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha512"
 	"encoding/base64"
 
 	"golang.org/x/crypto/scrypt"
 )
+
+// MasterKey : masterkey para cifrado AES
+var MasterKey = "ABC123"
 
 // función para comprobar errores (ahorra escritura)
 func chk(e error) {
@@ -42,4 +48,30 @@ func ChkScrypt(usrpass []byte, salt []byte, pass []byte) bool {
 	newpass, err := scrypt.Key(pass, salt, 1<<15, 8, 1, 32)
 	chk(err)
 	return string(usrpass) == string(newpass)
+}
+
+// Hash : genera el hash de data en [64]byte
+func Hash(data []byte) [64]byte {
+	return sha512.Sum512(data)
+}
+
+// Encrypt : función para cifrar (con AES en este caso), adjunta el IV al principio
+func Encrypt(data, key []byte) (out []byte) {
+	out = make([]byte, len(data)+16)    // reservamos espacio para el IV al principio
+	rand.Read(out[:16])                 // generamos el IV
+	blk, err := aes.NewCipher(key)      // cifrador en bloque (AES), usa key
+	chk(err)                            // comprobamos el error
+	ctr := cipher.NewCTR(blk, out[:16]) // cifrador en flujo: modo CTR, usa IV
+	ctr.XORKeyStream(out[16:], data)    // ciframos los datos
+	return
+}
+
+// Decrypt : función para descifrar (con AES en este caso)
+func Decrypt(data, key []byte) (out []byte) {
+	out = make([]byte, len(data)-16)     // la salida no va a tener el IV
+	blk, err := aes.NewCipher(key)       // cifrador en bloque (AES), usa key
+	chk(err)                             // comprobamos el error
+	ctr := cipher.NewCTR(blk, data[:16]) // cifrador en flujo: modo CTR, usa IV
+	ctr.XORKeyStream(out, data[16:])     // desciframos (doble cifrado) los datos
+	return
 }

@@ -23,11 +23,11 @@ func chk(e error) {
 	}
 }
 
-func response(w io.Writer, status bool, msg string) {
-	r := types.Response{Status: status, Msg: msg} // formateamos respuesta
-	rJSON, err := json.Marshal(&r)                // codificamos en JSON
-	chk(err)                                      // comprobamos error
-	w.Write(rJSON)                                // escribimos el JSON resultante
+// response : recibe un objeto de un struct para responder al cliente
+func response(w io.Writer, m interface{}) {
+	rJSON, err := json.Marshal(&m) // codificamos en JSON
+	chk(err)                       // comprobamos error
+	w.Write(rJSON)                 // escribimos el JSON resultante
 }
 
 func getMux() (mux *http.ServeMux) {

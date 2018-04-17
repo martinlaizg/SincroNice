@@ -3,7 +3,6 @@ package main
 import (
 	"SincroNice/crypto"
 	"SincroNice/types"
-	"crypto/sha256"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -43,7 +42,7 @@ func login() {
 
 	log.Println("Acceso como " + email + "...\n")
 
-	pass := sha256.Sum256(bpass)
+	pass := crypto.Hash(bpass)
 
 	data := url.Values{}
 	data.Set("email", crypto.Encode64([]byte(email)))
@@ -77,7 +76,7 @@ func registry() {
 
 	log.Println("Registrandose como " + email + "...\n")
 
-	pass := sha256.Sum256(bpass) // Hasheamos la contraseña con SHA256
+	pass := crypto.Hash(bpass) // Hasheamos la contraseña con SHA512
 
 	data := url.Values{}
 	data.Set("name", crypto.Encode64([]byte(name)))
