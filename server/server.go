@@ -2,7 +2,6 @@ package main
 
 import (
 	"SincroNice/types"
-	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"time"
 )
 
 var port = "8081"
@@ -44,6 +42,7 @@ func getMux() (mux *http.ServeMux) {
 // RunServer : run sincronice server
 func main() {
 	loadData()
+	defer saveData()
 
 	log.Println("Running server on port: " + port)
 	// suscripción SIGINT
@@ -65,10 +64,9 @@ func main() {
 	log.Println("\n\nShutdown server...")
 
 	// apagar servidor de forma segura
-	ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
-	fnc()
-	srv.Shutdown(ctx)
-	saveData()
+	// ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
+	// fnc()
+	// srv.Shutdown(ctx)
 	log.Println("Servidor detenido correctamente")
 }
 
