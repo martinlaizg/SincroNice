@@ -32,6 +32,30 @@ func send(endpoint string, data url.Values) *http.Response {
 	return r
 }
 
+func subir() {
+	fmt.Printf("\nRuta\n")
+	var ruta string
+	fmt.Scanln(&ruta)
+
+	log.Println("Ruta " + ruta + "...\n")
+
+	data := url.Values{}
+	data.Set("ruta", ruta)
+
+	response := send("/upload", data)
+	bData, err := ioutil.ReadAll(response.Body)
+	chk(err)
+	var rData types.Response
+	err = json.Unmarshal(bData, &rData)
+	chk(err)
+
+	if rData.Status == true {
+		fmt.Printf("Archivo subido\n")
+		return
+	}
+	fmt.Printf("Error al subir: %v\n", rData.Msg)
+}
+
 func login() {
 	fmt.Printf("\nLogin\n")
 	fmt.Print("Email: ")
@@ -117,13 +141,15 @@ func main() {
 	opt := ""
 	for opt != "q" {
 
-		fmt.Printf("1 - Login\n2 - Registro\nq - Salir\nOpcion: ")
+		fmt.Printf("1 - Login\n2 - Registro\n3 - Subir archivo\nq - Salir\nOpcion: ")
 		fmt.Scanf("%s\n", &opt)
 		switch opt {
 		case "1":
 			login()
 		case "2":
 			registry()
+		case "3":
+			subir()
 		case "q":
 			fmt.Println("Adios")
 		default:
