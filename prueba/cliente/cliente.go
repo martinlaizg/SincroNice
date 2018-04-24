@@ -55,6 +55,7 @@ func postFile(filename string, targetUrl string) error {
 // sample usage
 func main() {
 	target_url := "http://localhost:8080/upload"
-	filename := "C:/Users/pedro/Desktop/Ex_testIntermedio_abril_16.pdf"
+	//filename := "C:/Users/pedro/Desktop/Ex_testIntermedio_abril_16.pdf"
+	filename := "/home/pmga2/Escritorio/Enunciado.pdf"
 	postFile(filename, target_url)
 }
