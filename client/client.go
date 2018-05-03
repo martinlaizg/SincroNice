@@ -3,14 +3,18 @@ package main
 import (
 	"SincroNice/crypto"
 	"SincroNice/types"
+	"bytes"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/howeyc/gopass"
 )
@@ -32,28 +36,52 @@ func send(endpoint string, data url.Values) *http.Response {
 	return r
 }
 
-func subir() {
+func subir() error {
+
 	fmt.Printf("\nRuta\n")
 	var ruta string
 	fmt.Scanln(&ruta)
 
-	log.Println("Ruta " + ruta + "...\n")
+	fmt.Printf("\nNombre del archivo\n")
+	var nombre string
+	fmt.Scanln(&nombre)
+
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+
+	// this step is very important
+	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", ruta)
+	if err != nil {
+		fmt.Println("error writing to buffer")
+		return err
+	}
+
+	// open file handle
+	fh, err := os.Open(ruta)
+	if err != nil {
+		fmt.Println("error opening file")
+		return err
+	}
+	defer fh.Close()
+
+	//iocopy
+	_, err = io.Copy(fileWriter, fh)
+	if err != nil {
+		return err
+	}
+
+	contentType := bodyWriter.FormDataContentType()
+	bodyWriter.Close()
 
 	data := url.Values{}
-	data.Set("ruta", ruta)
+	data.Set("nombre", crypto.Encode64([]byte(nombre)))
+	data.Set("contentType", contentType)
 
-	response := send("/upload", data)
-	bData, err := ioutil.ReadAll(response.Body)
-	chk(err)
-	var rData types.Response
-	err = json.Unmarshal(bData, &rData)
-	chk(err)
-
-	if rData.Status == true {
-		fmt.Printf("Archivo subido\n")
-		return
+	http.Post(baseURL, contentType, bodyBuf)
+	if err != nil {
+		return err
 	}
-	fmt.Printf("Error al subir: %v\n", rData.Msg)
+	return nil
 }
 
 func login() {
