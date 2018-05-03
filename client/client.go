@@ -19,7 +19,7 @@ var baseURL = "https://localhost:8081"
 
 var client *http.Client
 
-var emailUsuarioLogeado = ""
+var usuario types.User
 
 func chk(e error) {
 	if e != nil {
@@ -54,16 +54,16 @@ func login() bool {
 	response := send("/login", data)
 	bData, err := ioutil.ReadAll(response.Body)
 	chk(err)
-	var rData types.Response
+	var rData types.User
 	err = json.Unmarshal(bData, &rData)
 	chk(err)
 
-	if rData.Status == true {
+	if rData.MainFolder != nil {
 		fmt.Printf("Logeado correctamente\n")
-		emailUsuarioLogeado = email
+		usuario = rData
 		return true
 	}
-	fmt.Printf("Error al loguear: %v\n\n", rData.Msg)
+	fmt.Printf("Error al loguear: %v\n\n", rData)
 	return false
 }
 
@@ -110,12 +110,12 @@ func createClient() {
 }
 
 func explorarMiUnidad() {
-	fmt.Println("\nBuscando carpetas...")
+	fmt.Println("\nEsta es tu carpeta principal.")
 
 }
 
 func loggedMenu() {
-	fmt.Printf("\nBienvenido a su espacio personal " + emailUsuarioLogeado + "\n\n")
+	fmt.Printf("\nBienvenido a su espacio personal " + usuario.Name + "\n\n")
 
 	opt := ""
 	for opt != "q" {
@@ -125,7 +125,7 @@ func loggedMenu() {
 		case "1":
 			explorarMiUnidad()
 		case "q":
-			fmt.Println("\nHasta la próxima " + emailUsuarioLogeado + "\n")
+			fmt.Println("\nHasta la próxima " + usuario.Name + "\n")
 		default:
 			fmt.Println("\nIntoduzca una opción correcta")
 		}

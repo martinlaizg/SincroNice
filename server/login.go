@@ -3,6 +3,7 @@ package main
 import (
 	"SincroNice/crypto"
 	"SincroNice/types"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -25,7 +26,9 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	auth := crypto.ChkScrypt(user.Password, user.Salt, password)
 
 	if auth {
-		response(w, true, "Acceso concedido")
+		resp, err := json.Marshal(user)
+		chk(err)
+		w.Write(resp)
 		log.Println("User " + email + " logging successful")
 		return
 	}

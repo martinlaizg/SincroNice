@@ -2,7 +2,6 @@ package main
 
 import (
 	"SincroNice/types"
-	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -32,32 +30,10 @@ func response(w io.Writer, status bool, msg string) {
 	w.Write(rJSON)                                // escribimos el JSON resultante
 }
 
-func userShow(w http.ResponseWriter, req *http.Request) {
-	log.Println("User try to get the folders and files.")
-	req.ParseForm()
-	w.Header().Set("Content-Type", "application/json")
-
-	vars := mux.Vars(req)
-	userID := vars["userId"]
-	user, exists := users[userID]
-	if !exists {
-		response(w, false, "No existe el usuario")
-		log.Println("Failed to search user files.")
-		return
-	}
-	resp, err := json.Marshal(user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Write(resp)
-	log.Println("It has been possible to find the user's space")
-}
-
 // RunServer : run sincronice server
 func main() {
 	loadData()
+	defer saveData()
 
 	log.Println("Running server on port: " + port)
 	// suscripción SIGINT
@@ -67,7 +43,7 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/login", loginHandler)
 	router.HandleFunc("/register", registerHandler)
-	router.HandleFunc("/u/{userId}", userShow)
+	router.HandleFunc("/u/{userID}/my-unit", registerHandler)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 
@@ -82,10 +58,11 @@ func main() {
 	log.Println("\n\nShutdown server...")
 
 	// apagar servidor de forma segura
-	ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
-	fnc()
-	srv.Shutdown(ctx)
-	saveData()
+	/*
+		ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
+		fnc()
+		srv.Shutdown(ctx)
+	*/
 	log.Println("Servidor detenido correctamente")
 }
 
