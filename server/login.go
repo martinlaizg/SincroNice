@@ -54,7 +54,6 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		Path:    "/",
 		Created: time.Now().UTC().String(),
 		Updated: time.Now().UTC().String()}
-	folders[len(folders)+1] = folder
 	user := types.User{
 		ID:         len(users) + 1,
 		Name:       name,

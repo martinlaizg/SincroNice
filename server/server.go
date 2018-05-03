@@ -18,8 +18,6 @@ import (
 var port = "8081"
 
 var users map[string]types.User
-var folders map[int]types.Folder
-var files map[string]types.File
 
 func chk(e error) {
 	if e != nil {
@@ -97,14 +95,6 @@ func loadData() {
 	chk(err)
 	err = json.Unmarshal(raw, &users)
 	chk(err)
-	raw, err = ioutil.ReadFile("./db/folders.json")
-	chk(err)
-	err = json.Unmarshal(raw, &folders)
-	chk(err)
-	raw, err = ioutil.ReadFile("./db/files.json")
-	chk(err)
-	err = json.Unmarshal(raw, &files)
-	chk(err)
 	log.Println("Data loaded")
 }
 
@@ -113,14 +103,6 @@ func saveData() {
 	raw, err := json.Marshal(users)
 	chk(err)
 	err = ioutil.WriteFile("./db/users.json", raw, 0777)
-	chk(err)
-	raw, err = json.Marshal(folders)
-	chk(err)
-	err = ioutil.WriteFile("./db/folders.json", raw, 0777)
-	chk(err)
-	raw, err = json.Marshal(files)
-	chk(err)
-	err = ioutil.WriteFile("./db/files.json", raw, 0777)
 	chk(err)
 	log.Println("Data saved")
 }
