@@ -52,8 +52,6 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 
 	dk, salt := crypto.Scrypt(pass)
 
-	fmt.Println("", name, email, string(pass), "")
-
 	if _, exist := users[email]; exist {
 		r.Status = false
 		r.Msg = "Ya existe un usuario con el mismo nombre de usuario"

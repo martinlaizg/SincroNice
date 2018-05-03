@@ -2,6 +2,7 @@ package main
 
 import (
 	"SincroNice/types"
+	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -58,11 +60,9 @@ func main() {
 	log.Println("\n\nShutdown server...")
 
 	// apagar servidor de forma segura
-	/*
-		ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
-		fnc()
-		srv.Shutdown(ctx)
-	*/
+	ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
+	fnc()
+	srv.Shutdown(ctx)
 	log.Println("Servidor detenido correctamente")
 }
 
