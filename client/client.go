@@ -3,14 +3,14 @@ package main
 import (
 	"SincroNice/crypto"
 	"SincroNice/types"
-	"crypto/sha256"
+	"bufio"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/howeyc/gopass"
 )
@@ -43,9 +43,9 @@ func login() bool {
 	bpass, err := gopass.GetPasswdMasked()
 	chk(err)
 
-	log.Println("Acceso como " + email + "...\n")
+	fmt.Printf("Acceso como %s...\n", email)
 
-	pass := sha256.Sum256(bpass)
+	pass := crypto.Hash(bpass)
 
 	data := url.Values{}
 	data.Set("email", crypto.Encode64([]byte(email)))
@@ -70,18 +70,19 @@ func login() bool {
 func registry() {
 	fmt.Printf("\nRegistro\n")
 	fmt.Print("Nombre: ")
-	var name string
-	fmt.Scanln(&name)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	name := scanner.Text()
+
 	fmt.Print("Email: ")
-	var email string
-	fmt.Scanln(&email)
+	scanner.Scan()
+	email := scanner.Text()
 	fmt.Print("Contraseña: ")
 	bpass, err := gopass.GetPasswdMasked() // Obtengo la contraseña
 	chk(err)
 
-	log.Println("Registrandose como " + email + "...\n")
-
-	pass := sha256.Sum256(bpass) // Hasheamos la contraseña con SHA256
+	fmt.Printf("Registrandose como %v \n", email)
+	pass := crypto.Hash(bpass) // Hasheamos la contraseña con SHA512
 
 	data := url.Values{}
 	data.Set("name", crypto.Encode64([]byte(name)))
@@ -99,7 +100,8 @@ func registry() {
 		fmt.Printf("Registrado correctamente\n\n")
 		return
 	}
-	fmt.Printf("Error al registrarse: %v\n", rData.Msg)
+	fmt.Println(rData)
+	fmt.Printf("Error al registrarse: %v\n\n", rData.Msg)
 }
 
 func createClient() {

@@ -12,15 +12,18 @@ import (
 // loginHandler : manejador de la peticion a /login
 func loginHandler(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
+	r := types.Response{}
 	w.Header().Set("Content-Type", "application/json")
 
 	email := string(crypto.Decode64(req.Form.Get("email")))
-	log.Println("Try login as " + email)
 	password := crypto.Decode64(req.Form.Get("password"))
 	user, exist := users[email]
+
 	if !exist {
-		response(w, false, "No existe ese usuario")
-		log.Println("Fail login, user " + email + " not exist")
+		r.Status = false
+		r.Msg = "No existe ese usuario"
+		log.Printf("Fail login, user %s not exist", email)
+		response(w, r)
 		return
 	}
 	auth := crypto.ChkScrypt(user.Password, user.Salt, password)
@@ -32,23 +35,30 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 		log.Println("User " + email + " logging successful")
 		return
 	}
-	response(w, false, "Acceso denegado")
-	log.Println("Fail login, fail password for user " + email)
+	r.Status = false
+	r.Msg = "Acceso denegado"
+	response(w, r)
+	log.Printf("Fail login, fail password for user %s", email)
 }
 
 func registerHandler(w http.ResponseWriter, req *http.Request) {
-	log.Println("User try registry")
 	req.ParseForm()
+	r := types.Response{}
 	w.Header().Set("Content-Type", "application/json")
 
 	name := string(crypto.Decode64(req.Form.Get("name")))
 	email := string(crypto.Decode64(req.Form.Get("email")))
 	pass := crypto.Decode64(req.Form.Get("password"))
+
 	dk, salt := crypto.Scrypt(pass)
 
+	fmt.Println("", name, email, string(pass), "")
+
 	if _, exist := users[email]; exist {
-		response(w, false, "ya existe un usuario con el mismo nombre de usuario")
-		log.Println("Fail registry, user " + email + " already exist")
+		r.Status = false
+		r.Msg = "Ya existe un usuario con el mismo nombre de usuario"
+		log.Printf("Fail registry, user %v already exist", email)
+		response(w, r)
 		return
 	}
 	folder := types.Folder{
@@ -64,6 +74,8 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		Salt:       salt,
 		MainFolder: &folder}
 	users[email] = user
-	response(w, true, "registrado correctamente")
-	log.Println("User " + email + " registry successful")
+	r.Status = true
+	r.Msg = "registrado correctamente"
+	log.Printf("User %s registry successful", email)
+	response(w, r)
 }
