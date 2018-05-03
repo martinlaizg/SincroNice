@@ -1,9 +1,18 @@
 {
-	"martinlaizg": {
-		"Name": "Martin Laiz Gómez",
-		"Token": "",
-		"Password": "m4IG6tgFLS2GuMjIPtSfX1vq08BTC4ZXh8baLo/2BFA=",
-		"Salt": "8x+DTp6R6QTOG3t9avysMK1IaY0hsCUCvksXLkVpNxg=",
-		"MainFolder": null
-	}
+    "rmm118@gcloud.ua.es": {
+        "ID": 1,
+        "Name": "Ramsés",
+        "Token": "",
+        "Password": "xXPzcGISgivebsbikSBnCptz7I330nS5Y9tmElmrY+M=",
+        "Salt": "0qQwbTDokiG7n/ZOuuLVb+8J6P7wDuiEFvn1uo5ljWM=",
+        "MainFolder": {
+            "UserID": 1,
+            "Name": "my-unit",
+            "Path": "/",
+            "Created": "2018-04-17 04:55:55.63998401 +0000 UTC",
+            "Updated": "2018-04-17 04:55:55.639987598 +0000 UTC",
+            "Folders": null,
+            "Files": null
+        }
+    }
 }

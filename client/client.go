@@ -19,6 +19,8 @@ var baseURL = "https://localhost:8081"
 
 var client *http.Client
 
+var usuario types.User
+
 func chk(e error) {
 	if e != nil {
 		panic(e)
@@ -32,7 +34,7 @@ func send(endpoint string, data url.Values) *http.Response {
 	return r
 }
 
-func login() {
+func login() bool {
 	fmt.Printf("\nLogin\n")
 	fmt.Print("Email: ")
 	var email string
@@ -52,15 +54,17 @@ func login() {
 	response := send("/login", data)
 	bData, err := ioutil.ReadAll(response.Body)
 	chk(err)
-	var rData types.Response
+	var rData types.User
 	err = json.Unmarshal(bData, &rData)
 	chk(err)
 
-	if rData.Status == true {
+	if rData.MainFolder != nil {
 		fmt.Printf("Logeado correctamente\n")
-		return
+		usuario = rData
+		return true
 	}
-	fmt.Printf("Error al loguear: %v\n", rData.Msg)
+	fmt.Printf("Error al loguear: %v\n\n", rData)
+	return false
 }
 
 func registry() {
@@ -93,15 +97,11 @@ func registry() {
 	chk(err)
 
 	if rData.Status == true {
-		fmt.Printf("Registrado correctamente\n")
+		fmt.Printf("Registrado correctamente\n\n")
 		return
 	}
 	fmt.Println(rData)
 	fmt.Printf("Error al registrarse: %v\n\n", rData.Msg)
-}
-
-func menu() {
-
 }
 
 func createClient() {
@@ -111,6 +111,29 @@ func createClient() {
 	client = &http.Client{Transport: tr}
 }
 
+func explorarMiUnidad() {
+	fmt.Println("\nEsta es tu carpeta principal.")
+
+}
+
+func loggedMenu() {
+	fmt.Printf("\nBienvenido a su espacio personal " + usuario.Name + "\n\n")
+
+	opt := ""
+	for opt != "q" {
+		fmt.Printf("1 - Explorar mi espacio\nq - Salir\nOpcion: ")
+		fmt.Scanf("%s\n", &opt)
+		switch opt {
+		case "1":
+			explorarMiUnidad()
+		case "q":
+			fmt.Println("\nHasta la próxima " + usuario.Name + "\n")
+		default:
+			fmt.Println("\nIntoduzca una opción correcta")
+		}
+	}
+}
+
 // RunClient : run sincronice client
 func main() {
 	createClient()
@@ -118,12 +141,13 @@ func main() {
 
 	opt := ""
 	for opt != "q" {
-
 		fmt.Printf("1 - Login\n2 - Registro\nq - Salir\nOpcion: ")
 		fmt.Scanf("%s\n", &opt)
 		switch opt {
 		case "1":
-			login()
+			if login() {
+				loggedMenu()
+			}
 		case "2":
 			registry()
 		case "q":

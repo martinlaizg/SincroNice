@@ -9,13 +9,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+
+	"github.com/gorilla/mux"
 )
 
 var port = "8081"
 
 var users map[string]types.User
-var folders map[string]types.Folder
-var files map[string]types.File
 
 func chk(e error) {
 	if e != nil {
@@ -30,15 +30,6 @@ func response(w io.Writer, m interface{}) {
 	w.Write(rJSON)                 // escribimos el JSON resultante
 }
 
-func getMux() (mux *http.ServeMux) {
-	mux = http.NewServeMux()
-
-	mux.Handle("/login", http.HandlerFunc(loginHandler))
-	mux.Handle("/register", http.HandlerFunc(registerHandler))
-
-	return
-}
-
 // RunServer : run sincronice server
 func main() {
 	loadData()
@@ -49,9 +40,12 @@ func main() {
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
 
-	mux := getMux()
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/login", loginHandler)
+	router.HandleFunc("/register", registerHandler)
+	router.HandleFunc("/u/{userID}/my-unit", registerHandler)
 
-	srv := &http.Server{Addr: ":" + port, Handler: mux}
+	srv := &http.Server{Addr: ":" + port, Handler: router}
 
 	// metodo concurrente
 	go func() {
@@ -64,9 +58,11 @@ func main() {
 	log.Println("\n\nShutdown server...")
 
 	// apagar servidor de forma segura
-	// ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
-	// fnc()
-	// srv.Shutdown(ctx)
+	/*
+		ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
+		fnc()
+		srv.Shutdown(ctx)
+	*/
 	log.Println("Servidor detenido correctamente")
 }
 
@@ -76,14 +72,6 @@ func loadData() {
 	chk(err)
 	err = json.Unmarshal(raw, &users)
 	chk(err)
-	raw, err = ioutil.ReadFile("./db/folders.json")
-	chk(err)
-	err = json.Unmarshal(raw, &folders)
-	chk(err)
-	raw, err = ioutil.ReadFile("./db/files.json")
-	chk(err)
-	err = json.Unmarshal(raw, &files)
-	chk(err)
 	log.Println("Data loaded")
 }
 
@@ -92,14 +80,6 @@ func saveData() {
 	raw, err := json.Marshal(users)
 	chk(err)
 	err = ioutil.WriteFile("./db/users.json", raw, 0777)
-	chk(err)
-	raw, err = json.Marshal(folders)
-	chk(err)
-	err = ioutil.WriteFile("./db/folders.json", raw, 0777)
-	chk(err)
-	raw, err = json.Marshal(files)
-	chk(err)
-	err = ioutil.WriteFile("./db/files.json", raw, 0777)
 	chk(err)
 	log.Println("Data saved")
 }

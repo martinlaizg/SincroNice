@@ -3,9 +3,10 @@ package main
 import (
 	"SincroNice/crypto"
 	"SincroNice/types"
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 )
 
 // loginHandler : manejador de la peticion a /login
@@ -28,10 +29,10 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	auth := crypto.ChkScrypt(user.Password, user.Salt, password)
 
 	if auth {
-		r.Status = true
-		r.Msg = "Acceso concedido"
-		log.Printf("User %s logging successful", email)
-		response(w, r)
+		resp, err := json.Marshal(user)
+		chk(err)
+		w.Write(resp)
+		log.Println("User " + email + " logging successful")
 		return
 	}
 	r.Status = false
@@ -60,11 +61,18 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		response(w, r)
 		return
 	}
+	folder := types.Folder{
+		UserID:  len(users) + 1,
+		Name:    "my-unit",
+		Path:    "/",
+		Created: time.Now().UTC().String(),
+		Updated: time.Now().UTC().String()}
 	user := types.User{
-		Name:     name,
-		Password: dk,
-		Salt:     salt}
-
+		ID:         len(users) + 1,
+		Name:       name,
+		Password:   dk,
+		Salt:       salt,
+		MainFolder: &folder}
 	users[email] = user
 	r.Status = true
 	r.Msg = "registrado correctamente"
