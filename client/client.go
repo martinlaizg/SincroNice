@@ -58,7 +58,7 @@ func login() bool {
 	err = json.Unmarshal(bData, &rData)
 	chk(err)
 
-	if rData.MainFolder != nil {
+	if rData.ID != 0 {
 		fmt.Printf("Logeado correctamente\n")
 		usuario = rData
 		return true

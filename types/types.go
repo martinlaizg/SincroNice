@@ -1,5 +1,9 @@
 package types
 
+import (
+	"github.com/rs/xid"
+)
+
 // Response : base de la respuesta al cliente
 type Response struct {
 	Status bool
@@ -19,7 +23,7 @@ type User struct {
 	Token      string
 	Password   []byte
 	Salt       []byte
-	MainFolder *Folder
+	MainFolder string
 }
 
 // Folder : tipo de carpeta
@@ -37,4 +41,10 @@ type Folder struct {
 type File struct {
 	ID       int
 	FolderID string
+}
+
+func GenXid() string {
+	id := xid.New()
+	generated := id.String()
+	return generated
 }

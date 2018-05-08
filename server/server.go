@@ -2,7 +2,7 @@ package main
 
 import (
 	"SincroNice/types"
-	"context"
+	// "context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"time"
+	// "time"
 
 	"github.com/gorilla/mux"
 )
@@ -18,6 +18,8 @@ import (
 var port = "8081"
 
 var users map[string]types.User
+var folders map[string]types.Folder
+var files map[int]types.File
 
 func chk(e error) {
 	if e != nil {
@@ -45,7 +47,7 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/login", loginHandler)
 	router.HandleFunc("/register", registerHandler)
-	router.HandleFunc("/u/{userID}/my-unit", registerHandler)
+	router.HandleFunc("/u/{userEmail}/my-unit", registerHandler)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 
@@ -60,10 +62,10 @@ func main() {
 	log.Println("\n\nShutdown server...")
 
 	// apagar servidor de forma segura
-	ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
-	fnc()
-	srv.Shutdown(ctx)
-	log.Println("Servidor detenido correctamente")
+	// ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
+	// fnc()
+	// srv.Shutdown(ctx)
+	// log.Println("Servidor detenido correctamente")
 }
 
 func loadData() {
@@ -71,6 +73,14 @@ func loadData() {
 	raw, err := ioutil.ReadFile("./db/users.json")
 	chk(err)
 	err = json.Unmarshal(raw, &users)
+	chk(err)
+	raw, err = ioutil.ReadFile("./db/folders.json")
+	chk(err)
+	err = json.Unmarshal(raw, &folders)
+	chk(err)
+	raw, err = ioutil.ReadFile("./db/files.json")
+	chk(err)
+	err = json.Unmarshal(raw, &files)
 	chk(err)
 	log.Println("Data loaded")
 }
@@ -80,6 +90,14 @@ func saveData() {
 	raw, err := json.Marshal(users)
 	chk(err)
 	err = ioutil.WriteFile("./db/users.json", raw, 0777)
+	chk(err)
+	raw, err = json.Marshal(folders)
+	chk(err)
+	err = ioutil.WriteFile("./db/folders.json", raw, 0777)
+	chk(err)
+	raw, err = json.Marshal(files)
+	chk(err)
+	err = ioutil.WriteFile("./db/files.json", raw, 0777)
 	chk(err)
 	log.Println("Data saved")
 }

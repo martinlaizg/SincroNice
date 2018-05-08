@@ -65,13 +65,15 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		Path:    "/",
 		Created: time.Now().UTC().String(),
 		Updated: time.Now().UTC().String()}
+	folderID := types.GenXid()
 	user := types.User{
 		ID:         len(users) + 1,
 		Name:       name,
 		Password:   dk,
 		Salt:       salt,
-		MainFolder: &folder}
+		MainFolder: folderID}
 	users[email] = user
+	folders[folderID] = folder
 	r.Status = true
 	r.Msg = "registrado correctamente"
 	log.Printf("User %s registry successful", email)
