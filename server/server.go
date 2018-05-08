@@ -12,7 +12,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	//"time"
+	"time"
+
+	"github.com/gorilla/mux"
 )
 
 var (
@@ -28,13 +30,6 @@ func chk(e error) {
 	}
 }
 
-func response(w io.Writer, status bool, msg string) {
-	r := types.Response{Status: status, Msg: msg} // formateamos respuesta
-	rJSON, err := json.Marshal(&r)                // codificamos en JSON
-	chk(err)                                      // comprobamos error
-	w.Write(rJSON)                                // escribimos el JSON resultante
-}
-
 const maxUploadSize = 2 * 1024 // 2 MB
 const uploadPath = "./tmp"
 
@@ -48,22 +43,32 @@ func getMux() (mux *http.ServeMux) {
 	return
 }
 
+// response : recibe un objeto de un struct para responder al cliente
+func response(w io.Writer, m interface{}) {
+	rJSON, err := json.Marshal(&m) // codificamos en JSON
+	chk(err)                       // comprobamos error
+	w.Write(rJSON)                 // escribimos el JSON resultante
+
+}
+
 // RunServer : run sincronice server
 func main() {
 	loadData()
 	defer saveData()
-
+  
 	fs := http.FileServer(http.Dir(uploadPath))
-	http.Handle("/files/", http.StripPrefix("/files", fs))
 
 	log.Println("Running server on port: " + port)
 	// suscripción SIGINT
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
 
-	mux := getMux()
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/login", loginHandler)
+	router.HandleFunc("/register", registerHandler)
+	router.HandleFunc("/u/{userID}/my-unit", registerHandler)
 
-	srv := &http.Server{Addr: ":" + port, Handler: mux}
+	srv := &http.Server{Addr: ":" + port, Handler: router}
 
 	// metodo concurrente
 	go func() {
@@ -88,14 +93,6 @@ func loadData() {
 	chk(err)
 	err = json.Unmarshal(raw, &users)
 	chk(err)
-	raw, err = ioutil.ReadFile("./db/folders.json")
-	chk(err)
-	err = json.Unmarshal(raw, &folders)
-	chk(err)
-	raw, err = ioutil.ReadFile("./db/files.json")
-	chk(err)
-	err = json.Unmarshal(raw, &files)
-	chk(err)
 	log.Println("Data loaded")
 }
 
@@ -104,14 +101,6 @@ func saveData() {
 	raw, err := json.Marshal(users)
 	chk(err)
 	err = ioutil.WriteFile("./db/users.json", raw, 0777)
-	chk(err)
-	raw, err = json.Marshal(folders)
-	chk(err)
-	err = ioutil.WriteFile("./db/folders.json", raw, 0777)
-	chk(err)
-	raw, err = json.Marshal(files)
-	chk(err)
-	err = ioutil.WriteFile("./db/files.json", raw, 0777)
 	chk(err)
 	log.Println("Data saved")
 }

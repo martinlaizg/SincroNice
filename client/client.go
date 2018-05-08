@@ -5,6 +5,7 @@ import (
 	"SincroNice/types"
 	"bytes"
 	"crypto/sha256"
+	"bufio"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -22,6 +23,8 @@ import (
 var baseURL = "https://localhost:8081"
 
 var client *http.Client
+
+var usuario types.User
 
 func chk(e error) {
 	if e != nil {
@@ -86,7 +89,7 @@ func subir() {
 
 }
 
-func login() {
+func login() bool {
 	fmt.Printf("\nLogin\n")
 	fmt.Print("Email: ")
 	var email string
@@ -95,9 +98,9 @@ func login() {
 	bpass, err := gopass.GetPasswdMasked()
 	chk(err)
 
-	log.Println("Acceso como " + email + "...\n")
+	fmt.Printf("Acceso como %s...\n", email)
 
-	pass := sha256.Sum256(bpass)
+	pass := crypto.Hash(bpass)
 
 	data := url.Values{}
 	data.Set("email", crypto.Encode64([]byte(email)))
@@ -106,32 +109,35 @@ func login() {
 	response := send("/login", data)
 	bData, err := ioutil.ReadAll(response.Body)
 	chk(err)
-	var rData types.Response
+	var rData types.User
 	err = json.Unmarshal(bData, &rData)
 	chk(err)
 
-	if rData.Status == true {
+	if rData.MainFolder != nil {
 		fmt.Printf("Logeado correctamente\n")
-		return
+		usuario = rData
+		return true
 	}
-	fmt.Printf("Error al loguear: %v\n", rData.Msg)
+	fmt.Printf("Error al loguear: %v\n\n", rData)
+	return false
 }
 
 func registry() {
 	fmt.Printf("\nRegistro\n")
 	fmt.Print("Nombre: ")
-	var name string
-	fmt.Scanln(&name)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	name := scanner.Text()
+
 	fmt.Print("Email: ")
-	var email string
-	fmt.Scanln(&email)
+	scanner.Scan()
+	email := scanner.Text()
 	fmt.Print("Contraseña: ")
 	bpass, err := gopass.GetPasswdMasked() // Obtengo la contraseña
 	chk(err)
 
-	log.Println("Registrandose como " + email + "...\n")
-
-	pass := sha256.Sum256(bpass) // Hasheamos la contraseña con SHA256
+	fmt.Printf("Registrandose como %v \n", email)
+	pass := crypto.Hash(bpass) // Hasheamos la contraseña con SHA512
 
 	data := url.Values{}
 	data.Set("name", crypto.Encode64([]byte(name)))
@@ -146,14 +152,11 @@ func registry() {
 	chk(err)
 
 	if rData.Status == true {
-		fmt.Printf("Registrado correctamente\n")
+		fmt.Printf("Registrado correctamente\n\n")
 		return
 	}
-	fmt.Printf("Error al registrarse: %v\n", rData.Msg)
-}
-
-func menu() {
-
+	fmt.Println(rData)
+	fmt.Printf("Error al registrarse: %v\n\n", rData.Msg)
 }
 
 func createClient() {
@@ -163,6 +166,29 @@ func createClient() {
 	client = &http.Client{Transport: tr}
 }
 
+func explorarMiUnidad() {
+	fmt.Println("\nEsta es tu carpeta principal.")
+
+}
+
+func loggedMenu() {
+	fmt.Printf("\nBienvenido a su espacio personal " + usuario.Name + "\n\n")
+
+	opt := ""
+	for opt != "q" {
+		fmt.Printf("1 - Explorar mi espacio\nq - Salir\nOpcion: ")
+		fmt.Scanf("%s\n", &opt)
+		switch opt {
+		case "1":
+			explorarMiUnidad()
+		case "q":
+			fmt.Println("\nHasta la próxima " + usuario.Name + "\n")
+		default:
+			fmt.Println("\nIntoduzca una opción correcta")
+		}
+	}
+}
+
 // RunClient : run sincronice client
 func main() {
 	createClient()
@@ -170,12 +196,13 @@ func main() {
 
 	opt := ""
 	for opt != "q" {
-
 		fmt.Printf("1 - Login\n2 - Registro\n3 - Subir archivo\nq - Salir\nOpcion: ")
 		fmt.Scanf("%s\n", &opt)
 		switch opt {
 		case "1":
-			login()
+			if login() {
+				loggedMenu()
+			}
 		case "2":
 			registry()
 		case "3":
