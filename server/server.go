@@ -4,15 +4,12 @@ import (
 	"SincroNice/types"
 	"crypto/rand"
 	"fmt"
-	"mime"
-	"path/filepath"
 	//"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/textproto"
 	"os"
 	"os/signal"
 	//"time"
@@ -46,8 +43,7 @@ func getMux() (mux *http.ServeMux) {
 
 	mux.Handle("/login", http.HandlerFunc(loginHandler))
 	mux.Handle("/register", http.HandlerFunc(registerHandler))
-	////
-	//	mux.Handle("/upload", http.HandleFunc(upload))
+	mux.Handle("/upload", http.HandlerFunc(uploadHandler))
 
 	return
 }
@@ -56,8 +52,6 @@ func getMux() (mux *http.ServeMux) {
 func main() {
 	loadData()
 	defer saveData()
-
-	http.HandleFunc("/upload", uploadFileHandler())
 
 	fs := http.FileServer(http.Dir(uploadPath))
 	http.Handle("/files/", http.StripPrefix("/files", fs))
@@ -122,98 +116,7 @@ func saveData() {
 	log.Println("Data saved")
 }
 
-// upload logic
-/*func upload(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("method:", r.Method)
-	if r.Method == "GET" {
-		crutime := time.Now().Unix()
-		h := md5.New()
-		io.WriteString(h, strconv.FormatInt(crutime, 10))
-		token := fmt.Sprintf("%x", h.Sum(nil))
-
-		t, _ := template.ParseFiles("upload.gtpl")
-		t.Execute(w, token)
-	} else {
-		r.ParseMultipartForm(32 << 20)
-		file, handler, err := r.FormFile("uploadfile")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		defer file.Close()
-		fmt.Fprintf(w, "%v", handler.Header)
-		f, err := os.OpenFile("./test/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		defer f.Close()
-		io.Copy(f, file)
-	}
-}*/
-
-// contains filtered or unexported fields
-type FileHeader struct {
-	Filename string
-	Header   textproto.MIMEHeader
-}
-
 //https://astaxie.gitbooks.io/build-web-application-with-golang/en/04.5.html
-
-func uploadFileHandler() http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// validate file size
-		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
-		if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-			renderError(w, "FILE_TOO_BIG", http.StatusBadRequest)
-			return
-		}
-
-		// parse and validate file and post parameters
-		fileType := r.PostFormValue("type")
-		file, _, err := r.FormFile("uploadFile")
-		if err != nil {
-			renderError(w, "INVALID_FILE", http.StatusBadRequest)
-			return
-		}
-		defer file.Close()
-		fileBytes, err := ioutil.ReadAll(file)
-		if err != nil {
-			renderError(w, "INVALID_FILE", http.StatusBadRequest)
-			return
-		}
-
-		// check file type, detectcontenttype only needs the first 512 bytes
-		filetype := http.DetectContentType(fileBytes)
-		if filetype != "image/jpeg" && filetype != "image/jpg" &&
-			filetype != "image/gif" && filetype != "image/png" &&
-			filetype != "application/pdf" {
-			renderError(w, "INVALID_FILE_TYPE", http.StatusBadRequest)
-			return
-		}
-		fileName := randToken(12)
-		fileEndings, err := mime.ExtensionsByType(fileType)
-		if err != nil {
-			renderError(w, "CANT_READ_FILE_TYPE", http.StatusInternalServerError)
-			return
-		}
-		newPath := filepath.Join(uploadPath, fileName+fileEndings[0])
-		fmt.Printf("FileType: %s, File: %s\n", fileType, newPath)
-
-		// write file
-		newFile, err := os.Create(newPath)
-		if err != nil {
-			renderError(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
-			return
-		}
-		defer newFile.Close()
-		if _, err := newFile.Write(fileBytes); err != nil {
-			renderError(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
-			return
-		}
-		w.Write([]byte("SUCCESS"))
-	})
-}
 
 func renderError(w http.ResponseWriter, message string, statusCode int) {
 	w.WriteHeader(http.StatusBadRequest)
