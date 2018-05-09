@@ -3,9 +3,11 @@ package main
 import (
 	"SincroNice/crypto"
 	"SincroNice/types"
+	"crypto/rand"
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/smtp"
 	"time"
 )
 
@@ -76,4 +78,34 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 	r.Msg = "registrado correctamente"
 	log.Printf("User %s registry successful", email)
 	response(w, r)
+}
+
+func generateToken() string {
+	token := make([]byte, 16)
+	_, err := rand.Read(token)
+	chk(err)
+
+	return string(token)
+}
+
+func sendToken(token string, to string) {
+
+	from := "sincronicesl@gmail.com"
+	pass := "Sincr0nice"
+	subject := "Verificación de inicio de sesión"
+	body := "Introduzca este código en su cliente: \r\n" + token
+
+	msg := "From: " + from + "\n" +
+		"To: " + to + "\n" +
+		"Subject: " + subject + "\n\n" +
+		body
+
+	err := smtp.SendMail("smtp.gmail.com:587",
+		smtp.PlainAuth("", from, pass, "smtp.gmail.com"),
+		from, []string{to}, []byte(msg))
+
+	if err != nil {
+		log.Printf("smtp error: %s", err)
+		return
+	}
 }
