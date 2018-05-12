@@ -17,28 +17,30 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 
 	email := string(crypto.Decode64(req.Form.Get("email")))
 	password := crypto.Decode64(req.Form.Get("password"))
-	user, exist := users[email]
+	for _, user := range users {
+		if user.Email == email {
+			auth := crypto.ChkScrypt(user.Password, user.Salt, password)
 
-	if !exist {
-		r.Status = false
-		r.Msg = "No existe ese usuario"
-		log.Printf("Fail login, user %s not exist", email)
-		response(w, r)
-		return
-	}
-	auth := crypto.ChkScrypt(user.Password, user.Salt, password)
+			if auth {
+				resp, err := json.Marshal(user)
+				chk(err)
+				w.Write(resp)
+				log.Println("User " + email + " logging successful")
+				return
+			}
 
-	if auth {
-		resp, err := json.Marshal(user)
-		chk(err)
-		w.Write(resp)
-		log.Println("User " + email + " logging successful")
-		return
+			r.Status = false
+			r.Msg = "Acceso denegado"
+			response(w, r)
+			log.Printf("Fail login, fail password for user %s", email)
+			return
+		}
 	}
 	r.Status = false
-	r.Msg = "Acceso denegado"
+	r.Msg = "No existe ese usuario"
+	log.Printf("Fail login, user %s not exist", email)
 	response(w, r)
-	log.Printf("Fail login, fail password for user %s", email)
+	return
 }
 
 func registerHandler(w http.ResponseWriter, req *http.Request) {
@@ -52,28 +54,40 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 
 	dk, salt := crypto.Scrypt(pass)
 
-	if _, exist := users[email]; exist {
-		r.Status = false
-		r.Msg = "Ya existe un usuario con el mismo nombre de usuario"
-		log.Printf("Fail registry, user %v already exist", email)
-		response(w, r)
-		return
+	for _, user := range users {
+		if user.Email == email {
+			r.Status = false
+			r.Msg = "Ya existe un usuario con el mismo nombre de usuario"
+			log.Printf("Fail registry, user %v already exist", email)
+			response(w, r)
+			return
+		}
 	}
+
+	// Map de prueba
+	// var carpetas map[string]string
+	// carpetas = make(map[string]string)
+	// carpetas["bbrgdqhciteecb8ootig"] = "Prueba"
+
+	userID := types.GenXid()
+	folderID := types.GenXid()
 	folder := types.Folder{
-		UserID:  len(users) + 1,
+		ID:      folderID,
+		UserID:  userID,
 		Name:    "my-unit",
 		Path:    "/",
 		Created: time.Now().UTC().String(),
-		Updated: time.Now().UTC().String()}
-	folderID := types.GenXid()
+		Updated: time.Now().UTC().String(),
+		Folders: make(map[string]string)}
+	folders[folderID] = folder
 	user := types.User{
-		ID:         len(users) + 1,
+		ID:         userID,
+		Email:      email,
 		Name:       name,
 		Password:   dk,
 		Salt:       salt,
 		MainFolder: folderID}
-	users[email] = user
-	folders[folderID] = folder
+	users[userID] = user
 	r.Status = true
 	r.Msg = "registrado correctamente"
 	log.Printf("User %s registry successful", email)

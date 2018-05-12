@@ -18,7 +18,8 @@ type Heredado struct {
 
 // User : tipo de usuario
 type User struct {
-	ID         int
+	ID         string
+	Email      string
 	Name       string
 	Token      string
 	Password   []byte
@@ -28,13 +29,14 @@ type User struct {
 
 // Folder : tipo de carpeta
 type Folder struct {
-	UserID  int
+	ID      string
+	UserID  string
 	Name    string
 	Path    string
 	Created string
 	Updated string
-	Folders []*Folder
-	Files   []*File
+	Folders map[string]string
+	Files   map[string]string
 }
 
 // File : tipo de fichero

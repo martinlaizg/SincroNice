@@ -1,8 +1,10 @@
 package main
 
 import (
-	"SincroNice/types"
+
 	// "context"
+	"SincroNice/crypto"
+	"SincroNice/types"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -19,7 +21,7 @@ var port = "8081"
 
 var users map[string]types.User
 var folders map[string]types.Folder
-var files map[int]types.File
+var files map[string]types.File
 
 func chk(e error) {
 	if e != nil {
@@ -32,6 +34,70 @@ func response(w io.Writer, m interface{}) {
 	rJSON, err := json.Marshal(&m) // codificamos en JSON
 	chk(err)                       // comprobamos error
 	w.Write(rJSON)                 // escribimos el JSON resultante
+}
+
+func getMainFolder(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := string(crypto.Decode64(req.Form.Get("id")))
+	user, exist := users[userID]
+	if !exist {
+		r.Status = false
+		r.Msg = "El usuario al que se intenta acceder no existe."
+		response(w, r)
+		log.Printf("Fail access to user %s", user.Email)
+		return
+	} else {
+		folder, exist := folders[user.MainFolder]
+		if !exist {
+			r.Status = false
+			r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
+			response(w, r)
+			log.Printf("Fail access to main folder of user %s", user.Email)
+			return
+		} else {
+			r.Status = true
+			r.Msg = "La carpeta principal del usuario se ha encontrado"
+			json.NewEncoder(w).Encode(folder)
+			log.Printf("The user %s has correctly accessed the folder %s", user.Email, folder.Name)
+			return
+		}
+	}
+}
+
+func getFolder(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := string(crypto.Decode64(req.Form.Get("id")))
+	folderID := string(crypto.Decode64(req.Form.Get("folderId")))
+
+	user, exist := users[userID]
+	if !exist {
+		r.Status = false
+		r.Msg = "El usuario al que se intenta acceder no existe."
+		response(w, r)
+		log.Printf("Fail access to user %s", user.Email)
+		return
+	} else {
+		folder, exist := folders[folderID]
+		if !exist {
+			r.Status = false
+			r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
+			response(w, r)
+			log.Printf("Fail access to main folder of user %s", user.Email)
+			return
+		} else {
+			r.Status = true
+			r.Msg = "La carpeta no se ha podido encontrar"
+			json.NewEncoder(w).Encode(folder)
+			log.Printf("The user %s has correctly accessed the folder %s", user.Email, folder.Name)
+			return
+		}
+	}
 }
 
 // RunServer : run sincronice server
@@ -47,7 +113,8 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/login", loginHandler)
 	router.HandleFunc("/register", registerHandler)
-	router.HandleFunc("/u/{userEmail}/my-unit", registerHandler)
+	router.HandleFunc("/u/{id}/my-unit", getMainFolder)
+	router.HandleFunc("/u/{id}/folders/{folderId}", getFolder)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 
