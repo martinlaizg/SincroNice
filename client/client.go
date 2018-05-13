@@ -60,7 +60,7 @@ func login() bool {
 	response := send("/login", data)
 	bData, err := ioutil.ReadAll(response.Body)
 	chk(err)
-	rData := types.ResponseToken{}
+	rData := types.Response{}
 	err = json.Unmarshal(bData, &rData)
 	chk(err)
 
@@ -94,6 +94,9 @@ func solicitarToken() bool {
 	if resp.Status == true {
 		usuario.Token = token
 		fmt.Println("Sesión verificada correctamente")
+	} else {
+		usuario = User{}
+		fmt.Println("El token introducido no coincide")
 	}
 	return true
 }

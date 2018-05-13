@@ -4,7 +4,6 @@ import (
 	"SincroNice/crypto"
 	"SincroNice/types"
 	"crypto/rand"
-	"encoding/json"
 	"log"
 	"net/http"
 	"net/smtp"
@@ -39,7 +38,10 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	token := generateToken()
-	// TO-DO : enviar email
+	sendToken(token, email)
+
+	user.Token = token
+	users[email] = user
 
 	resp := types.ResponseToken{}
 	resp.Status = true
@@ -48,10 +50,6 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 
 	response(w, resp)
 	log.Println("User " + email + " logging successful")
-}
-
-func generateToken() string {
-	return "myToken"
 }
 
 func registerHandler(w http.ResponseWriter, req *http.Request) {
@@ -92,11 +90,13 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func generateToken() string {
-	token := make([]byte, 16)
+	token := make([]byte, 6)
 	_, err := rand.Read(token)
 	chk(err)
-
-	return string(token)
+	sToken := crypto.Encode64(token)
+	log.Println("Token generado ", sToken)
+	return sToken
+	// return "MyToken"
 }
 
 func sendToken(token string, to string) {
@@ -104,7 +104,7 @@ func sendToken(token string, to string) {
 	from := "sincronicesl@gmail.com"
 	pass := "Sincr0nice"
 	subject := "Verificación de inicio de sesión"
-	body := "Introduzca este código en su cliente: \r\n" + token
+	body := "Introduzca este código en su cliente: \"" + token + "\""
 
 	msg := "From: " + from + "\n" +
 		"To: " + to + "\n" +
@@ -129,7 +129,7 @@ func checkTokenHandler(w http.ResponseWriter, req *http.Request) {
 	email := string(crypto.Decode64(req.Form.Get("email")))
 	token := string(crypto.Decode64(req.Form.Get("token")))
 
-	if users[email].Token == token {
+	if chkToken(token, email) {
 		r.Status = true
 		r.Msg = "Token correcto"
 	} else {
@@ -138,4 +138,8 @@ func checkTokenHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	response(w, r)
+}
+
+func chkToken(token string, email string) bool {
+	return users[email].Token == token
 }

@@ -1,1 +1,53 @@
-{"martinlaizg@gmail.com":{"ID":2,"Email":"","Name":"Martin Laiz Gómez","Token":"","Password":"6WoKs1AtuKijE0qrFG7AslOvSFoo2WmZGWrs6gdwJhw=","Salt":"DJS2t0lueueKdHe7w8/OQvjF/vmX5RSvShOWOkVlIl8=","MainFolder":{"UserID":2,"Name":"my-unit","Path":"/","Created":"2018-05-08 20:42:44.915318388 +0000 UTC","Updated":"2018-05-08 20:42:44.915331072 +0000 UTC","Folders":null,"Files":null}},"rmm118@gcloud.ua.es":{"ID":1,"Email":"","Name":"Ramsés","Token":"","Password":"xXPzcGISgivebsbikSBnCptz7I330nS5Y9tmElmrY+M=","Salt":"0qQwbTDokiG7n/ZOuuLVb+8J6P7wDuiEFvn1uo5ljWM=","MainFolder":{"UserID":1,"Name":"my-unit","Path":"/","Created":"2018-04-17 04:55:55.63998401 +0000 UTC","Updated":"2018-04-17 04:55:55.639987598 +0000 UTC","Folders":null,"Files":null}}}
+{
+	"martinlaizg@gmail.com": {
+		"ID": 2,
+		"Email": "",
+		"Name": "Martín Laiz",
+		"Token": "rBO45bh0",
+		"Password": "mZr+0b8OTF53kkUm8G0VY8UzB7kJnYvzbyHiPvdNIc4=",
+		"Salt": "ostmn/l3TPgcrqFqodF2dhXbPKkXWmYU2yvX+pr7BEk=",
+		"MainFolder": {
+			"UserID": 2,
+			"Name": "my-unit",
+			"Path": "/",
+			"Created": "2018-05-13 15:26:26.935936688 +0000 UTC",
+			"Updated": "2018-05-13 15:26:26.935949037 +0000 UTC",
+			"Folders": null,
+			"Files": null
+		}
+	},
+	"rmm118@gcloud.ua.es": {
+		"ID": 1,
+		"Email": "",
+		"Name": "Ramsés",
+		"Token": "",
+		"Password": "xXPzcGISgivebsbikSBnCptz7I330nS5Y9tmElmrY+M=",
+		"Salt": "0qQwbTDokiG7n/ZOuuLVb+8J6P7wDuiEFvn1uo5ljWM=",
+		"MainFolder": {
+			"UserID": 1,
+			"Name": "my-unit",
+			"Path": "/",
+			"Created": "2018-04-17 04:55:55.63998401 +0000 UTC",
+			"Updated": "2018-04-17 04:55:55.639987598 +0000 UTC",
+			"Folders": null,
+			"Files": null
+		}
+	},
+	"s": {
+		"ID": 3,
+		"Email": "",
+		"Name": "s",
+		"Token": "",
+		"Password": "RDuIIeQU/bQYvnvGgDeqQpEeAZJ25SidsaxDszat0EA=",
+		"Salt": "q24zXDV7Gx/s4ud7GnaFkz1yvWV+fHTkik+XOWajw30=",
+		"MainFolder": {
+			"UserID": 3,
+			"Name": "my-unit",
+			"Path": "/",
+			"Created": "2018-05-13 15:26:35.820821692 +0000 UTC",
+			"Updated": "2018-05-13 15:26:35.820833645 +0000 UTC",
+			"Folders": null,
+			"Files": null
+		}
+	}
+}
