@@ -43,10 +43,15 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	user.Token = token
 	users[email] = user
 
-	resp := types.ResponseToken{}
+	resp := types.ResponseLogin{}
 	resp.Status = true
 	resp.Msg = "Logeado correctamente"
 	resp.Token = token
+	resp.User = types.User{
+		ID:    user.ID,
+		Email: user.Email,
+		Name:  user.Name,
+	}
 
 	response(w, resp)
 	log.Println("User " + email + " logging successful")
@@ -78,6 +83,7 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		Updated: time.Now().UTC().String()}
 	user := types.User{
 		ID:         len(users) + 1,
+		Email:      email,
 		Name:       name,
 		Password:   dk,
 		Salt:       salt,
@@ -90,13 +96,11 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func generateToken() string {
-	token := make([]byte, 6)
+	token := make([]byte, 14)
 	_, err := rand.Read(token)
 	chk(err)
 	sToken := crypto.Encode64(token)
-	log.Println("Token generado ", sToken)
 	return sToken
-	// return "MyToken"
 }
 
 func sendToken(token string, to string) {
@@ -130,13 +134,14 @@ func checkTokenHandler(w http.ResponseWriter, req *http.Request) {
 	token := string(crypto.Decode64(req.Form.Get("token")))
 
 	if chkToken(token, email) {
+		log.Println("Token verificado correctamente")
 		r.Status = true
 		r.Msg = "Token correcto"
 	} else {
+		log.Println("Token no verificado")
 		r.Status = false
 		r.Msg = "Token incorrecto"
 	}
-
 	response(w, r)
 }
 

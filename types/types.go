@@ -12,6 +12,12 @@ type ResponseToken struct {
 	Token string
 }
 
+// ResponseLogin : respuesta al login
+type ResponseLogin struct {
+	Response
+	User
+}
+
 // User : tipo de usuario
 type User struct {
 	ID         int

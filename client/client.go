@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -19,13 +20,7 @@ var baseURL = "https://localhost:8081"
 
 var client *http.Client
 
-// User : tipo user para el cliente
-type User struct {
-	types.User
-	Email string
-}
-
-var usuario User
+var usuario types.User
 
 func chk(e error) {
 	if e != nil {
@@ -60,16 +55,16 @@ func login() bool {
 	response := send("/login", data)
 	bData, err := ioutil.ReadAll(response.Body)
 	chk(err)
-	rData := types.Response{}
+	rData := types.ResponseLogin{}
 	err = json.Unmarshal(bData, &rData)
 	chk(err)
 
 	if rData.Status == false {
-		usuario = User{}
+		usuario = types.User{}
 		fmt.Printf("Email y/o contraseña incorrectas\n")
 		return false
 	}
-	usuario.Email = email
+	usuario = rData.User
 	return solicitarToken()
 }
 
@@ -79,7 +74,7 @@ func solicitarToken() bool {
 	fmt.Print("Token: ")
 	var token string
 	fmt.Scanln(&token)
-
+	fmt.Println("Usuario: ", usuario.Email)
 	data := url.Values{}
 	data.Set("email", crypto.Encode64([]byte(usuario.Email)))
 	data.Set("token", crypto.Encode64([]byte(token)))
@@ -95,7 +90,7 @@ func solicitarToken() bool {
 		usuario.Token = token
 		fmt.Println("Sesión verificada correctamente")
 	} else {
-		usuario = User{}
+		usuario = types.User{}
 		fmt.Println("El token introducido no coincide")
 	}
 	return true
@@ -170,13 +165,20 @@ func loggedMenu() {
 
 // RunClient : run sincronice client
 func main() {
+	loadData()
+	defer saveData()
 	createClient()
 	fmt.Printf("\nBienvenido a SincroNice\n\n")
 
 	opt := ""
 	for opt != "q" {
+		if usuario.Token != "" {
+			loggedMenu()
+			opt = "q"
+		}
 		fmt.Printf("1 - Login\n2 - Registro\nq - Salir\nOpcion: ")
 		fmt.Scanf("%s\n", &opt)
+
 		switch opt {
 		case "1":
 			if login() {
@@ -191,4 +193,22 @@ func main() {
 		}
 		//menu()
 	}
+}
+
+func saveData() {
+	log.Println("Saving data to JSON...")
+	raw, err := json.Marshal(usuario)
+	chk(err)
+	err = ioutil.WriteFile("./userData.json", raw, 0777)
+	chk(err)
+	log.Println("Data saved")
+}
+
+func loadData() {
+	log.Println("Loading data from JSON...")
+	raw, err := ioutil.ReadFile("./userData.json")
+	chk(err)
+	err = json.Unmarshal(raw, &usuario)
+	chk(err)
+	log.Println("Data loaded")
 }
