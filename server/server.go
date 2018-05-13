@@ -43,6 +43,7 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/login", loginHandler)
 	router.HandleFunc("/register", registerHandler)
+	router.HandleFunc("/checkToken", checkTokenHandler)
 	router.HandleFunc("/u/{userID}/my-unit", registerHandler)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}

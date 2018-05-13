@@ -30,17 +30,28 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	auth := crypto.ChkScrypt(user.Password, user.Salt, password)
 
-	if auth {
-		resp, err := json.Marshal(user)
-		chk(err)
-		w.Write(resp)
-		log.Println("User " + email + " logging successful")
+	if !auth {
+		r.Status = false
+		r.Msg = "Acceso denegado"
+		response(w, r)
+		log.Printf("Fail login, fail password for user %s", email)
 		return
 	}
-	r.Status = false
-	r.Msg = "Acceso denegado"
-	response(w, r)
-	log.Printf("Fail login, fail password for user %s", email)
+
+	token := generateToken()
+	// TO-DO : enviar email
+
+	resp := types.ResponseToken{}
+	resp.Status = true
+	resp.Msg = "Logeado correctamente"
+	resp.Token = token
+
+	response(w, resp)
+	log.Println("User " + email + " logging successful")
+}
+
+func generateToken() string {
+	return "myToken"
 }
 
 func registerHandler(w http.ResponseWriter, req *http.Request) {
@@ -108,4 +119,23 @@ func sendToken(token string, to string) {
 		log.Printf("smtp error: %s", err)
 		return
 	}
+}
+
+func checkTokenHandler(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	email := string(crypto.Decode64(req.Form.Get("email")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
+
+	if users[email].Token == token {
+		r.Status = true
+		r.Msg = "Token correcto"
+	} else {
+		r.Status = false
+		r.Msg = "Token incorrecto"
+	}
+
+	response(w, r)
 }

@@ -19,7 +19,13 @@ var baseURL = "https://localhost:8081"
 
 var client *http.Client
 
-var usuario types.User
+// User : tipo user para el cliente
+type User struct {
+	types.User
+	Email string
+}
+
+var usuario User
 
 func chk(e error) {
 	if e != nil {
@@ -54,17 +60,42 @@ func login() bool {
 	response := send("/login", data)
 	bData, err := ioutil.ReadAll(response.Body)
 	chk(err)
-	var rData types.User
+	rData := types.ResponseToken{}
 	err = json.Unmarshal(bData, &rData)
 	chk(err)
 
-	if rData.MainFolder != nil {
-		fmt.Printf("Logeado correctamente\n")
-		usuario = rData
-		return true
+	if rData.Status == false {
+		usuario = User{}
+		fmt.Printf("Email y/o contraseña incorrectas\n")
+		return false
 	}
-	fmt.Printf("Error al loguear: %v\n\n", rData)
-	return false
+	usuario.Email = email
+	return solicitarToken()
+}
+
+func solicitarToken() bool {
+
+	fmt.Println("Introduzca el token que le hemos enviado por correo electrónico")
+	fmt.Print("Token: ")
+	var token string
+	fmt.Scanln(&token)
+
+	data := url.Values{}
+	data.Set("email", crypto.Encode64([]byte(usuario.Email)))
+	data.Set("token", crypto.Encode64([]byte(token)))
+
+	response := send("/checkToken", data)
+
+	respByte, err := ioutil.ReadAll(response.Body)
+	chk(err)
+	resp := types.Response{}
+	err = json.Unmarshal(respByte, &resp)
+	chk(err)
+	if resp.Status == true {
+		usuario.Token = token
+		fmt.Println("Sesión verificada correctamente")
+	}
+	return true
 }
 
 func registry() {
@@ -90,18 +121,18 @@ func registry() {
 	data.Set("password", crypto.Encode64(pass[:])) // Codificamos la contraseña en base64 para enviarla
 
 	response := send("/register", data)
-	bData, err := ioutil.ReadAll(response.Body)
+	respByte, err := ioutil.ReadAll(response.Body)
 	chk(err)
-	var rData types.Response
-	err = json.Unmarshal(bData, &rData)
+	resp := types.Response{}
+	err = json.Unmarshal(respByte, &resp)
 	chk(err)
 
-	if rData.Status == true {
+	if resp.Status == true {
 		fmt.Printf("Registrado correctamente\n\n")
 		return
 	}
-	fmt.Println(rData)
-	fmt.Printf("Error al registrarse: %v\n\n", rData.Msg)
+	fmt.Println(resp)
+	fmt.Printf("Error al registrarse: %v\n\n", resp.Msg)
 }
 
 func createClient() {

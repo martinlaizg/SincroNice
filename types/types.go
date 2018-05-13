@@ -6,15 +6,16 @@ type Response struct {
 	Msg    string
 }
 
-// Heredado : estructura de respuesta heredada (es un ejemplo)
-type Heredado struct {
+// ResponseToken : respuesta con el token
+type ResponseToken struct {
 	Response
-	token string
+	Token string
 }
 
 // User : tipo de usuario
 type User struct {
 	ID         int
+	Email      string
 	Name       string
 	Token      string
 	Password   []byte
