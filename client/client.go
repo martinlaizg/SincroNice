@@ -109,17 +109,45 @@ func login() bool {
 	response := send("/login", data)
 	bData, err := ioutil.ReadAll(response.Body)
 	chk(err)
-	var rData types.User
+	rData := types.ResponseLogin{}
 	err = json.Unmarshal(bData, &rData)
 	chk(err)
 
-	if rData.MainFolder != nil {
-		fmt.Printf("Logeado correctamente\n")
-		usuario = rData
-		return true
+	if rData.Status == false {
+		usuario = types.User{}
+		fmt.Printf("Email y/o contraseña incorrectas\n")
+		return false
 	}
-	fmt.Printf("Error al loguear: %v\n\n", rData)
-	return false
+	usuario = rData.User
+	return solicitarToken()
+}
+
+func solicitarToken() bool {
+
+	fmt.Println("Introduzca el token que le hemos enviado por correo electrónico")
+	fmt.Print("Token: ")
+	var token string
+	fmt.Scanln(&token)
+	fmt.Println("Usuario: ", usuario.Email)
+	data := url.Values{}
+	data.Set("email", crypto.Encode64([]byte(usuario.Email)))
+	data.Set("token", crypto.Encode64([]byte(token)))
+
+	response := send("/checkToken", data)
+
+	respByte, err := ioutil.ReadAll(response.Body)
+	chk(err)
+	resp := types.Response{}
+	err = json.Unmarshal(respByte, &resp)
+	chk(err)
+	if resp.Status == true {
+		usuario.Token = token
+		fmt.Println("Sesión verificada correctamente")
+	} else {
+		usuario = types.User{}
+		fmt.Println("El token introducido no coincide")
+	}
+	return true
 }
 
 func registry() {
@@ -145,18 +173,18 @@ func registry() {
 	data.Set("password", crypto.Encode64(pass[:])) // Codificamos la contraseña en base64 para enviarla
 
 	response := send("/register", data)
-	bData, err := ioutil.ReadAll(response.Body)
+	respByte, err := ioutil.ReadAll(response.Body)
 	chk(err)
-	var rData types.Response
-	err = json.Unmarshal(bData, &rData)
+	resp := types.Response{}
+	err = json.Unmarshal(respByte, &resp)
 	chk(err)
 
-	if rData.Status == true {
+	if resp.Status == true {
 		fmt.Printf("Registrado correctamente\n\n")
 		return
 	}
-	fmt.Println(rData)
-	fmt.Printf("Error al registrarse: %v\n\n", rData.Msg)
+	fmt.Println(resp)
+	fmt.Printf("Error al registrarse: %v\n\n", resp.Msg)
 }
 
 func createClient() {
@@ -191,13 +219,20 @@ func loggedMenu() {
 
 // RunClient : run sincronice client
 func main() {
+	loadData()
+	defer saveData()
 	createClient()
 	fmt.Printf("\nBienvenido a SincroNice\n\n")
 
 	opt := ""
 	for opt != "q" {
+		if usuario.Token != "" {
+			loggedMenu()
+			opt = "q"
+		}
 		fmt.Printf("1 - Login\n2 - Registro\n3 - Subir archivo\nq - Salir\nOpcion: ")
 		fmt.Scanf("%s\n", &opt)
+
 		switch opt {
 		case "1":
 			if login() {
@@ -214,4 +249,22 @@ func main() {
 		}
 		//menu()
 	}
+}
+
+func saveData() {
+	log.Println("Saving data to JSON...")
+	raw, err := json.Marshal(usuario)
+	chk(err)
+	err = ioutil.WriteFile("./userData.json", raw, 0777)
+	chk(err)
+	log.Println("Data saved")
+}
+
+func loadData() {
+	log.Println("Loading data from JSON...")
+	raw, err := ioutil.ReadFile("./userData.json")
+	chk(err)
+	err = json.Unmarshal(raw, &usuario)
+	chk(err)
+	log.Println("Data loaded")
 }

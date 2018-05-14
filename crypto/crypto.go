@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"crypto/sha512"
 	"encoding/base64"
-	"fmt"
 
 	"golang.org/x/crypto/scrypt"
 )
@@ -48,7 +47,6 @@ func Scrypt(pass []byte) (dk []byte, salt []byte) {
 func ChkScrypt(usrpass []byte, salt []byte, pass []byte) bool {
 	newpass, err := scrypt.Key(pass, salt, 1<<15, 8, 1, 32)
 	chk(err)
-	fmt.Println(string(usrpass), string(newpass))
 	return string(usrpass) == string(newpass)
 }
 
