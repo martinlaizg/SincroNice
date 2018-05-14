@@ -5,10 +5,10 @@
     - Comunicación segura
         - Crear servidor HTTPS
     - Sistema de autenticación
-        - Cifrado del login con SHA256
-        - Soltier
-        - Verificación en 2 pasos
-        - Doble HASH (en el cliente y en el servidor)
+        - ~Cifrado del login con SHA256~
+        - ~Soltier~
+        - ~Verificación en 2 pasos~
+        - ~Doble HASH (en el cliente y en el servidor)~
         - Cifrar el HASH con una contraseña (guardar la contraseña en otra base de datos)
     - Almacenamiento
         - Esquema de almacenamiento
