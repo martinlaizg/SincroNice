@@ -2,6 +2,8 @@ package main
 
 import (
 	"SincroNice/types"
+	"crypto/rand"
+	"fmt"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -13,9 +15,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var port = "8081"
-
-var users map[string]types.User
+var (
+	users   map[string]types.User
+	folders map[string]types.Folder
+	files   map[string]types.File
+	port    = "8081"
+)
 
 func chk(e error) {
 	if e != nil {
@@ -23,17 +28,33 @@ func chk(e error) {
 	}
 }
 
+const maxUploadSize = 2 * 1024 // 2 MB
+const uploadPath = "./tmp"
+
+func getMux() (mux *http.ServeMux) {
+	mux = http.NewServeMux()
+
+	mux.Handle("/login", http.HandlerFunc(loginHandler))
+	mux.Handle("/register", http.HandlerFunc(registerHandler))
+	mux.Handle("/upload", http.HandlerFunc(uploadHandler))
+
+	return
+}
+
 // response : recibe un objeto de un struct para responder al cliente
 func response(w io.Writer, m interface{}) {
 	rJSON, err := json.Marshal(&m) // codificamos en JSON
 	chk(err)                       // comprobamos error
 	w.Write(rJSON)                 // escribimos el JSON resultante
+
 }
 
 // RunServer : run sincronice server
 func main() {
 	loadData()
 	defer saveData()
+  
+	fs := http.FileServer(http.Dir(uploadPath))
 
 	log.Println("Running server on port: " + port)
 	// suscripción SIGINT
@@ -59,9 +80,9 @@ func main() {
 	log.Println("\n\nShutdown server...")
 
 	// apagar servidor de forma segura
-	//ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
-	//fnc()
-	//srv.Shutdown(ctx)
+	// ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
+	// fnc()
+	// srv.Shutdown(ctx)
 	log.Println("Servidor detenido correctamente")
 }
 
@@ -81,4 +102,17 @@ func saveData() {
 	err = ioutil.WriteFile("./db/users.json", raw, 0777)
 	chk(err)
 	log.Println("Data saved")
+}
+
+//https://astaxie.gitbooks.io/build-web-application-with-golang/en/04.5.html
+
+func renderError(w http.ResponseWriter, message string, statusCode int) {
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte(message))
+}
+
+func randToken(len int) string {
+	b := make([]byte, len)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)
 }
