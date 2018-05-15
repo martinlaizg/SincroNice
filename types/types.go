@@ -1,6 +1,8 @@
 package types
 
-import "github.com/rs/xid"
+import (
+	"github.com/rs/xid"
+)
 
 // Response : base de la respuesta al cliente
 type Response struct {
