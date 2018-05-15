@@ -75,19 +75,26 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		response(w, r)
 		return
 	}
+
+	userID := types.GenXid()
+	folderID := types.GenXid()
 	folder := types.Folder{
-		UserID:  len(users) + 1,
+		ID:      folderID,
+		UserID:  userID,
 		Name:    "my-unit",
 		Path:    "/",
 		Created: time.Now().UTC().String(),
-		Updated: time.Now().UTC().String()}
+		Updated: time.Now().UTC().String(),
+		Folders: make(map[string]string),
+		Files:   make(map[string]string)}
+	folders[folderID] = folder
 	user := types.User{
-		ID:         len(users) + 1,
+		ID:         userID,
 		Email:      email,
 		Name:       name,
 		Password:   dk,
 		Salt:       salt,
-		MainFolder: &folder}
+		MainFolder: folderID}
 	users[email] = user
 	r.Status = true
 	r.Msg = "registrado correctamente"

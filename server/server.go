@@ -3,8 +3,8 @@ package main
 import (
 	"SincroNice/types"
 	"crypto/rand"
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -19,6 +19,7 @@ var (
 	users   map[string]types.User
 	folders map[string]types.Folder
 	files   map[string]types.File
+	blocks  map[string]types.Block
 	port    = "8081"
 )
 
@@ -53,8 +54,8 @@ func response(w io.Writer, m interface{}) {
 func main() {
 	loadData()
 	defer saveData()
-  
-	fs := http.FileServer(http.Dir(uploadPath))
+
+	//fs := http.FileServer(http.Dir(uploadPath))
 
 	log.Println("Running server on port: " + port)
 	// suscripción SIGINT

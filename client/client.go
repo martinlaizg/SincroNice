@@ -3,9 +3,8 @@ package main
 import (
 	"SincroNice/crypto"
 	"SincroNice/types"
-	"bytes"
-	"crypto/sha256"
 	"bufio"
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"

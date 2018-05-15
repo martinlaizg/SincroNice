@@ -42,6 +42,9 @@ func uploadHandler(w http.ResponseWriter, req *http.Request) {
 		FolderID: "default"}
 
 	files[name] = NewFile
-	response(w, true, "Subido correctamente")
+	resp := types.Response{
+		Status: true,
+		Msg:    "Subido correctamente"}
+	response(w, resp)
 	log.Println("File " + name + " upload successful")
 }

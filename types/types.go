@@ -1,5 +1,7 @@
 package types
 
+import "github.com/rs/xid"
+
 // Response : base de la respuesta al cliente
 type Response struct {
 	Status bool
@@ -20,28 +22,53 @@ type ResponseLogin struct {
 
 // User : tipo de usuario
 type User struct {
-	ID         int
+	ID         string
 	Email      string
 	Name       string
 	Token      string
+	FilePass   string
 	Password   []byte
 	Salt       []byte
-	MainFolder *Folder
+	MainFolder string
 }
 
 // Folder : tipo de carpeta
 type Folder struct {
-	UserID  int
+	ID      string
+	UserID  string
 	Name    string
 	Path    string
 	Created string
 	Updated string
-	Folders []*Folder
-	Files   []*File
+	Folders map[string]string
+	Files   map[string]string
 }
 
 // File : tipo de fichero
 type File struct {
-	ID       int
+	ID       string
 	FolderID string
+	Versions []*Version
+}
+
+// Version : versión
+type Version struct {
+	ID     string
+	Name   string
+	Blocks []string
+}
+
+// Block : tipo de bloque
+type Block struct {
+	ID    string
+	File  string
+	Size  int
+	Owner string
+}
+
+// GenXid : generador de bloques
+func GenXid() string {
+	id := xid.New()
+	generated := id.String()
+	return generated
 }
