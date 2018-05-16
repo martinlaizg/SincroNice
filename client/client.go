@@ -114,30 +114,22 @@ func login() bool {
 	err = json.Unmarshal(bData, &rData)
 	chk(err)
 
-<<<<<<< HEAD
-	if rData.Status == false {
-		usuario = types.User{}
-		fmt.Printf("Email y/o contraseña incorrectas\n")
+	if !rData.Status {
+		fmt.Println(rData.Msg)
 		return false
-=======
-	if rData.ID != "" {
-		fmt.Printf("Logeado correctamente\n")
-		usuario = rData
-		return true
->>>>>>> navegacion-carpetas
 	}
 	usuario = rData.User
 	return solicitarToken()
 }
 
 func solicitarToken() bool {
-
 	fmt.Println("Introduzca el token que le hemos enviado por correo electrónico")
 	fmt.Print("Token: ")
 	var token string
 	fmt.Scanln(&token)
-	fmt.Println("Usuario: ", usuario.Email)
 	data := url.Values{}
+
+	data.Set("id", crypto.Encode64([]byte(usuario.ID)))
 	data.Set("email", crypto.Encode64([]byte(usuario.Email)))
 	data.Set("token", crypto.Encode64([]byte(token)))
 
@@ -145,11 +137,12 @@ func solicitarToken() bool {
 
 	respByte, err := ioutil.ReadAll(response.Body)
 	chk(err)
-	resp := types.Response{}
+	resp := types.ResponseLogin{}
 	err = json.Unmarshal(respByte, &resp)
 	chk(err)
+
 	if resp.Status == true {
-		usuario.Token = token
+		usuario = resp.User
 		fmt.Println("Sesión verificada correctamente")
 	} else {
 		usuario = types.User{}
@@ -191,12 +184,7 @@ func registry() {
 		fmt.Printf("Registrado correctamente\n\n")
 		return
 	}
-<<<<<<< HEAD
-	fmt.Println(resp)
 	fmt.Printf("Error al registrarse: %v\n\n", resp.Msg)
-=======
-	fmt.Printf("Error al registrarse: %v\n\n", rData.Msg)
->>>>>>> navegacion-carpetas
 }
 
 func createClient() {
@@ -242,9 +230,6 @@ func exploreFolder(id string) bool {
 		fmt.Println("\nSe encuentra en el directorio " + rData.Name + "\n")
 		folder = rData
 		return true
-	} else {
-		fmt.Println("\nEl directorio que desea explorar, está vacío\n")
-		return false
 	}
 	fmt.Printf("Error al recuperar la carpeta: %v\n\n", rData)
 	return false

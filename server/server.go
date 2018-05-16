@@ -26,7 +26,6 @@ var (
 	port    = "8081"
 )
 
-
 func chk(e error) {
 	if e != nil {
 		panic(e)
@@ -35,16 +34,6 @@ func chk(e error) {
 
 const maxUploadSize = 2 * 1024 // 2 MB
 const uploadPath = "./tmp"
-
-func getMux() (mux *http.ServeMux) {
-	mux = http.NewServeMux()
-
-	mux.Handle("/login", http.HandlerFunc(loginHandler))
-	mux.Handle("/register", http.HandlerFunc(registerHandler))
-	mux.Handle("/upload", http.HandlerFunc(uploadHandler))
-
-	return
-}
 
 // response : recibe un objeto de un struct para responder al cliente
 func response(w io.Writer, m interface{}) {
@@ -66,7 +55,6 @@ func getMainFolder(w http.ResponseWriter, req *http.Request) {
 		r.Msg = "El usuario al que se intenta acceder no existe."
 		response(w, r)
 		log.Printf("Fail access to user %s", user.Email)
-		return
 	} else {
 		folder, exist := folders[user.MainFolder]
 		if !exist {
@@ -74,13 +62,11 @@ func getMainFolder(w http.ResponseWriter, req *http.Request) {
 			r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
 			response(w, r)
 			log.Printf("Fail access to main folder of user %s", user.Email)
-			return
 		} else {
 			r.Status = true
 			r.Msg = "La carpeta principal del usuario se ha encontrado"
 			json.NewEncoder(w).Encode(folder)
 			log.Printf("The user %s has correctly accessed the folder %s", user.Email, folder.Name)
-			return
 		}
 	}
 }
@@ -99,7 +85,6 @@ func getFolder(w http.ResponseWriter, req *http.Request) {
 		r.Msg = "El usuario al que se intenta acceder no existe."
 		response(w, r)
 		log.Printf("Fail access to user %s", user.Email)
-		return
 	} else {
 		folder, exist := folders[folderID]
 		if !exist {
@@ -107,13 +92,11 @@ func getFolder(w http.ResponseWriter, req *http.Request) {
 			r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
 			response(w, r)
 			log.Printf("Fail access to main folder of user %s", user.Email)
-			return
 		} else {
 			r.Status = true
 			r.Msg = "La carpeta no se ha podido encontrar"
 			json.NewEncoder(w).Encode(folder)
 			log.Printf("The user %s has correctly accessed the folder %s", user.Email, folder.Name)
-			return
 		}
 	}
 }

@@ -18,23 +18,27 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 
 	email := string(crypto.Decode64(req.Form.Get("email")))
 	password := crypto.Decode64(req.Form.Get("password"))
-	for _, user := range users {
-		if user.Email == email {
-			auth := crypto.ChkScrypt(user.Password, user.Salt, password)
-
-			if auth {
-				resp, err := json.Marshal(user)
-				chk(err)
-				w.Write(resp)
-				log.Println("User " + email + " logging successful")
-				return
-			}
-
-	if !auth {
+	user := types.User{}
+	found := false
+	for _, actUser := range users {
+		if actUser.Email == email {
+			found = true
+			user = actUser
+		}
+	}
+	if !found {
+		log.Printf("Se ha intentado acceder con el usuario %s pero no existe\n", email)
 		r.Status = false
-		r.Msg = "Acceso denegado"
+		r.Msg = "Usuario y/o contraseña incorrectos"
 		response(w, r)
-		log.Printf("Fail login, fail password for user %s", email)
+		return
+	}
+	auth := crypto.ChkScrypt(user.Password, user.Salt, password)
+	if !auth {
+		log.Printf("Intento de login del usuario %s pero contraseña incorrecta", email)
+		r.Status = false
+		r.Msg = "Usuario y/o contraseña incorrectos"
+		response(w, r)
 		return
 	}
 
@@ -42,12 +46,11 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	sendToken(token, email)
 
 	user.Token = token
-	users[email] = user
+	users[user.ID] = user
 
 	resp := types.ResponseLogin{}
 	resp.Status = true
 	resp.Msg = "Logeado correctamente"
-	resp.Token = token
 	resp.User = types.User{
 		ID:    user.ID,
 		Email: user.Email,
@@ -55,7 +58,7 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	response(w, resp)
-	log.Println("User " + email + " logging successful")
+	log.Printf("Intento de acceso como %s, usuario y contraseña correcta, esperando verificación", email)
 }
 
 func registerHandler(w http.ResponseWriter, req *http.Request) {
@@ -136,24 +139,26 @@ func sendToken(token string, to string) {
 
 func checkTokenHandler(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
-	r := types.Response{}
+	r := types.ResponseLogin{}
 	w.Header().Set("Content-Type", "application/json")
 
-	email := string(crypto.Decode64(req.Form.Get("email")))
+	id := string(crypto.Decode64(req.Form.Get("id")))
 	token := string(crypto.Decode64(req.Form.Get("token")))
+	email := string(crypto.Decode64(req.Form.Get("email")))
 
-	if chkToken(token, email) {
-		log.Println("Token verificado correctamente")
+	if chkToken(token, id) {
+		log.Printf("Token del usuario %s verificado correctamente", email)
 		r.Status = true
 		r.Msg = "Token correcto"
+
 	} else {
-		log.Println("Token no verificado")
+		log.Printf("Token del usuario %s incorrecto", email)
 		r.Status = false
 		r.Msg = "Token incorrecto"
 	}
 	response(w, r)
 }
 
-func chkToken(token string, email string) bool {
-	return users[email].Token == token
+func chkToken(token string, id string) bool {
+	return users[id].Token == token
 }
