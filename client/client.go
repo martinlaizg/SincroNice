@@ -11,11 +11,13 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/howeyc/gopass"
 )
@@ -25,6 +27,7 @@ var baseURL = "https://localhost:8081"
 var client *http.Client
 
 var usuario types.User
+
 var folder types.Folder
 
 func chk(e error) {
@@ -42,13 +45,14 @@ func send(endpoint string, data url.Values) *http.Response {
 
 func subir() {
 
-	fmt.Printf("\nRuta\n")
+	fmt.Printf("\nFichero:")
 	var ruta string
 	fmt.Scanln(&ruta)
 
-	fmt.Printf("\nNombre del archivo\n")
-	var nombre string
-	fmt.Scanln(&nombre)
+	//parts := make(map[string]byte[])
+
+	carpetas := strings.Split(ruta, "/")
+	nombre := carpetas[len(carpetas)-1]
 
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
@@ -91,7 +95,7 @@ func subir() {
 }
 
 func login() bool {
-	fmt.Println("\nLogin\n")
+	fmt.Print("\nLogin\n")
 	fmt.Print("Email: ")
 	var email string
 	fmt.Scanln(&email)
@@ -147,6 +151,7 @@ func solicitarToken() bool {
 	} else {
 		usuario = types.User{}
 		fmt.Println("El token introducido no coincide")
+		return false
 	}
 	return true
 }
@@ -206,7 +211,7 @@ func explorarMiUnidad() bool {
 	chk(err)
 
 	if rData.ID != "" {
-		fmt.Println("\nSe encuentra en su directorio personal\n")
+		fmt.Printf("\nSe encuentra en su directorio personal\n")
 		folder = rData
 		return true
 	}
@@ -214,7 +219,7 @@ func explorarMiUnidad() bool {
 	return false
 }
 
-func exploreFolder(id string) bool {
+func getFolder(id string) bool {
 	data := url.Values{}
 	data.Set("id", crypto.Encode64([]byte(usuario.ID)))
 	data.Set("folderId", crypto.Encode64([]byte(id)))
@@ -235,24 +240,29 @@ func exploreFolder(id string) bool {
 	return false
 }
 
-func exploredUnit() {
+func exploredUnit(mainfolder string) {
 	opt := ""
 	i := 1
 	match := false
 	var foldersIds map[int][]string
 	foldersIds = make(map[int][]string)
-
+	folderID := mainfolder
 	for opt != "q" {
+		_ = getFolder(folderID)
+
 		match = false
 		for key, value := range folder.Folders {
 			fmt.Println(i, "- "+value+" ("+key+")")
 			foldersIds[i] = []string{key, value}
 			i = i + 1
 		}
-		fmt.Printf("q - Salir\nOpcion: ")
+		fmt.Printf("s - Subir fichero\nq - Salir\nOpcion: ")
 		fmt.Scanf("%s\n", &opt)
 
-		if opt != "q" {
+		switch opt {
+		case "s":
+			uploadFile()
+		case "q":
 			iter, err := strconv.Atoi(opt)
 			if err != nil {
 				fmt.Println("\nDebes introducir un número de la lista o q, ha introducido " + opt + "\n")
@@ -261,13 +271,11 @@ func exploredUnit() {
 					if key == iter {
 						i = 1
 						match = true
-						if exploreFolder(value[0]) {
-							exploredUnit()
-						}
+						folderID = value[0]
 					}
 				}
 				if !match {
-					fmt.Println("\nLa opción introducida no existe, debe escoger de entre la lista\n")
+					fmt.Printf("\nLa opción introducida no existe, debe escoger de entre la lista\n")
 					i = 1
 				}
 			}
@@ -280,19 +288,68 @@ func loggedMenu() {
 
 	opt := ""
 	for opt != "q" {
-		fmt.Printf("\n1 - Explorar mi espacio\nq - Salir\nOpcion: ")
+		fmt.Printf("\n1 - Explorar mi espacio\nl - Logout\nq - Salir\nOpcion: ")
 		fmt.Scanf("%s\n", &opt)
 		switch opt {
 		case "1":
-			if explorarMiUnidad() {
-				exploredUnit()
-			}
+			exploredUnit(usuario.MainFolder)
+		case "l":
+			fmt.Println("Cerrando sesión...")
+			usuario = types.User{}
+			opt = "q"
 		case "q":
 			fmt.Println("\nHasta la próxima " + usuario.Name + "\n")
 		default:
 			fmt.Println("\nIntoduzca una opción correcta")
 		}
 	}
+}
+
+func uploadFile() bool {
+	fmt.Printf("Indique el fichero: ")
+	path := "/home/martinlaizg/Desktop/doc.bat"
+	// fmt.Scanf("%s\n", &path)
+	tokens := strings.Split(path, "/")
+	fileName := tokens[len(tokens)-1]
+
+	fmt.Println(fileName)
+
+	file, err := os.Open(path)
+	chk(err)
+	defer file.Close()
+	fileInfo, _ := file.Stat()
+	var fileSize int64 = fileInfo.Size()
+	const fileChunk = 1 * (1 << 20) // 1 MB
+	totalPartsNum := uint64(math.Ceil(float64(fileSize) / float64(fileChunk)))
+	fmt.Printf("Splitting to %d pieces.\n", totalPartsNum)
+	fileChuked := make(map[[64]byte][]byte)
+	parts := [][64]byte{}
+
+	newPath := "/home/martinlaizg/Desktop/documento.sh"
+	chk(err)
+
+	for i := uint64(0); i < totalPartsNum; i++ {
+		partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
+		partBuffer := make([]byte, partSize)
+
+		file.Read(partBuffer)
+
+		hash := crypto.Hash(partBuffer)
+		fileChuked[hash] = partBuffer
+		parts = append(parts, hash)
+		// // write to disk
+		// fileName := "somebigfile_" + strconv.FormatUint(i, 10)
+		// _, err := os.Create(fileName)
+		// chk(err)
+		// // write/save buffer to disk
+		// fmt.Println("Split to : ", fileName)
+	}
+	_, err = os.Create(newPath)
+	for _, value := range parts {
+		ioutil.WriteFile(newPath, fileChuked[value], os.ModeAppend)
+	}
+
+	return true
 }
 
 // RunClient : run sincronice client
@@ -302,30 +359,32 @@ func main() {
 	createClient()
 	fmt.Printf("\nBienvenido a SincroNice\n\n")
 
-	opt := ""
-	for opt != "q" {
+	logged := false
+
+	for opt := ""; opt != "q"; {
 		if usuario.Token != "" {
-			loggedMenu()
-			opt = "q"
+			logged = true
 		}
-		fmt.Printf("1 - Login\n2 - Registro\n3 - Subir archivo\nq - Salir\nOpcion: ")
-		fmt.Scanf("%s\n", &opt)
+
+		if logged {
+			loggedMenu()
+			logged = false
+		}
+		if !logged {
+			fmt.Printf("1 - Login\n2 - Registro\nq - Salir\nOpcion: ")
+			fmt.Scanf("%s\n", &opt)
+		}
 
 		switch opt {
 		case "1":
-			if login() {
-				loggedMenu()
-			}
+			logged = login()
 		case "2":
 			registry()
-		case "3":
-			subir()
 		case "q":
 			fmt.Println("Adios")
 		default:
 			fmt.Println("Intoduzca una opción correcta")
 		}
-		//menu()
 	}
 }
 

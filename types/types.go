@@ -49,6 +49,7 @@ type Folder struct {
 // File : tipo de fichero
 type File struct {
 	ID       string
+	Name     string
 	FolderID string
 	Versions []*Version
 }

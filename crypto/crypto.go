@@ -10,9 +10,6 @@ import (
 	"golang.org/x/crypto/scrypt"
 )
 
-// MasterKey : masterkey para cifrado AES
-var MasterKey = "ABC123"
-
 // función para comprobar errores (ahorra escritura)
 func chk(e error) {
 	if e != nil {
@@ -39,6 +36,7 @@ func Scrypt(pass []byte) (dk []byte, salt []byte) {
 	chk(err)
 
 	dk, err = scrypt.Key(pass, salt, 1<<15, 8, 1, 32)
+
 	chk(err)
 	return
 }
