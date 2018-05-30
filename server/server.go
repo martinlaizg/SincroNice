@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -94,9 +95,52 @@ func getFolder(w http.ResponseWriter, req *http.Request) {
 			log.Printf("Fail access to main folder of user %s", user.Email)
 		} else {
 			r.Status = true
-			r.Msg = "La carpeta no se ha podido encontrar"
+			r.Msg = "Hemos encontrado la carpeta"
 			json.NewEncoder(w).Encode(folder)
 			log.Printf("The user %s has correctly accessed the folder %s", user.Email, folder.Name)
+		}
+	}
+}
+
+func createFolder(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := string(crypto.Decode64(req.Form.Get("user")))
+	folderName := string(crypto.Decode64(req.Form.Get("folderName")))
+	actualFolder := string(crypto.Decode64(req.Form.Get("actualFolder")))
+
+	user, exist := users[userID]
+	if !exist {
+		r.Status = false
+		r.Msg = "El usuario al que se intenta acceder no existe."
+		response(w, r)
+		log.Printf("Fail access to user %s", user.Email)
+	} else {
+		folder, exist := folders[actualFolder]
+		if !exist {
+			r.Status = false
+			r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
+			response(w, r)
+			log.Printf("Fail access to main folder of user %s", user.Email)
+		} else {
+			folderID := types.GenXid()
+			folder.Folders[folderID] = folderName
+			folder := types.Folder{
+				ID:      folderID,
+				UserID:  userID,
+				Name:    folderName,
+				Path:    "/",
+				Created: time.Now().UTC().String(),
+				Updated: time.Now().UTC().String(),
+				Folders: make(map[string]string),
+				Files:   make(map[string]string)}
+			folders[folderID] = folder
+			r.Status = true
+			r.Msg = "La carpeta ha sido creada correctamente"
+			json.NewEncoder(w).Encode(folder)
+			log.Printf("The user %s has correctly created the folder %s", user.Email, folder.Name)
 		}
 	}
 }
@@ -119,6 +163,7 @@ func main() {
 	router.HandleFunc("/checkToken", checkTokenHandler)
 	router.HandleFunc("/u/{id}/my-unit", getMainFolder)
 	router.HandleFunc("/u/{id}/folders/{folderId}", getFolder)
+	router.HandleFunc("/u/{id}/folders", createFolder)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 

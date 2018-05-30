@@ -199,26 +199,6 @@ func createClient() {
 	client = &http.Client{Transport: tr}
 }
 
-func explorarMiUnidad() bool {
-	data := url.Values{}
-	data.Set("id", crypto.Encode64([]byte(usuario.ID)))
-
-	response := send("/u/{usuario.ID}/my-unit", data)
-	bData, err := ioutil.ReadAll(response.Body)
-	chk(err)
-	var rData types.Folder
-	err = json.Unmarshal(bData, &rData)
-	chk(err)
-
-	if rData.ID != "" {
-		fmt.Printf("\nSe encuentra en su directorio personal\n")
-		folder = rData
-		return true
-	}
-	fmt.Printf("Error al recuperar la carpeta personal: %v\n\n", rData)
-	return false
-}
-
 func getFolder(id string) bool {
 	data := url.Values{}
 	data.Set("id", crypto.Encode64([]byte(usuario.ID)))
@@ -240,29 +220,77 @@ func getFolder(id string) bool {
 	return false
 }
 
+func crearCarpeta(actualFolder string) bool {
+	fmt.Print("Introduzca el nombre de la carpeta: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	folderName := scanner.Text()
+
+	fmt.Printf("\nCreando la carpeta con el nombre %s...", folderName)
+	data := url.Values{}
+	data.Set("user", crypto.Encode64([]byte(usuario.ID)))
+	data.Set("token", crypto.Encode64([]byte(usuario.Token)))
+	data.Set("actualFolder", crypto.Encode64([]byte(actualFolder)))
+	data.Set("folderName", crypto.Encode64([]byte(folderName)))
+
+	response := send("/u/{usuario.ID}/folders", data)
+	bData, err := ioutil.ReadAll(response.Body)
+	chk(err)
+
+	var rData types.Folder
+	err = json.Unmarshal(bData, &rData)
+	chk(err)
+
+	if rData.Folders != nil {
+		fmt.Println("\nLa carpeta con nombre " + rData.Name + " se ha creado correctamente.")
+		return true
+	}
+	fmt.Printf("Error al crear la carpeta: %v\n\n", rData)
+	return false
+}
+
 func exploredUnit(mainfolder string) {
 	opt := ""
 	i := 1
 	match := false
+	error := false
 	var foldersIds map[int][]string
+	var foldersBreadcrumbs map[string]string
+	foldersBreadcrumbs = make(map[string]string)
 	foldersIds = make(map[int][]string)
 	folderID := mainfolder
+	folderName := "my-unit"
 	for opt != "q" {
-		_ = getFolder(folderID)
+		i = 1
+		foldersIds = make(map[int][]string)
+
+		if foldersBreadcrumbs[folderID] == "" || !error {
+			_ = getFolder(folderID)
+			foldersBreadcrumbs[folderID] = folderName
+		}
 
 		match = false
-		for key, value := range folder.Folders {
-			fmt.Println(i, "- "+value+" ("+key+")")
-			foldersIds[i] = []string{key, value}
-			i = i + 1
+		if len(folder.Folders) != 0 {
+			for key, value := range folder.Folders {
+				fmt.Println(i, "- "+value+" ("+key+")")
+				foldersIds[i] = []string{key, value}
+				i = i + 1
+			}
+		} else {
+			fmt.Println("-- No hay ningún archivo ni directorio. --")
 		}
-		fmt.Printf("s - Subir fichero\nq - Salir\nOpcion: ")
+
+		fmt.Println("------------------------------------------")
+		fmt.Printf("s - Subir fichero\n")
+		fmt.Printf("c - Crear carpeta\n")
+		if folderName != "my-unit" {
+			fmt.Printf("v - Volver\n")
+		}
+		fmt.Printf("q - Salir\n")
+		fmt.Printf("Opcion: ")
 		fmt.Scanf("%s\n", &opt)
 
-		switch opt {
-		case "s":
-			uploadFile()
-		case "q":
+		if opt != "q" && opt != "s" && opt != "v" && opt != "c" {
 			iter, err := strconv.Atoi(opt)
 			if err != nil {
 				fmt.Println("\nDebes introducir un número de la lista o q, ha introducido " + opt + "\n")
@@ -272,12 +300,34 @@ func exploredUnit(mainfolder string) {
 						i = 1
 						match = true
 						folderID = value[0]
+						folderName = value[1]
+						error = false
 					}
 				}
 				if !match {
-					fmt.Printf("\nLa opción introducida no existe, debe escoger de entre la lista\n")
+					fmt.Println("\nLa opción introducida no existe, debe escoger de entre la lista\n")
 					i = 1
+					error = true
 				}
+			}
+		} else {
+
+			switch opt {
+			case "s":
+				uploadFile()
+			case "v":
+				delete(foldersBreadcrumbs, folderID)
+				for key, value := range foldersBreadcrumbs {
+					match = true
+					folderID = key
+					folderName = value
+					error = false
+				}
+			case "q":
+				fmt.Printf("\nBienvenido a su espacio personal " + usuario.Name + "\n")
+			case "c":
+				crearCarpeta(folderID)
+				error = false
 			}
 		}
 	}
@@ -294,7 +344,7 @@ func loggedMenu() {
 		case "1":
 			exploredUnit(usuario.MainFolder)
 		case "l":
-			fmt.Println("Cerrando sesión...")
+			fmt.Println("\nCerrando sesión...\n")
 			usuario = types.User{}
 			opt = "q"
 		case "q":
@@ -357,7 +407,7 @@ func main() {
 	loadData()
 	defer saveData()
 	createClient()
-	fmt.Printf("\nBienvenido a SincroNice\n\n")
+	fmt.Printf("\nBienvenido a SincroNice\n")
 
 	logged := false
 
