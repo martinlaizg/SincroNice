@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/howeyc/gopass"
 )
 
@@ -249,6 +250,34 @@ func crearCarpeta(actualFolder string) bool {
 	return false
 }
 
+func borrarCarpeta(deleteFolder string) bool {
+	if deleteFolder != usuario.MainFolder {
+		fmt.Printf("\nBorrando la carpeta con el nombre %s...", folder.Name)
+		data := url.Values{}
+		data.Set("user", crypto.Encode64([]byte(usuario.ID)))
+		data.Set("token", crypto.Encode64([]byte(usuario.Token)))
+		data.Set("folder", crypto.Encode64([]byte(deleteFolder)))
+
+		response := send("/u/{usuario.ID}/folders/delete/{deleteFolder}", data)
+		bData, err := ioutil.ReadAll(response.Body)
+		chk(err)
+
+		var rData types.Folder
+		err = json.Unmarshal(bData, &rData)
+		chk(err)
+
+		if rData.Folders != nil {
+			fmt.Println("\nLa carpeta con nombre " + rData.Name + " se ha borrado correctamente.")
+			return true
+		}
+		fmt.Printf("\nError al borrar la carpeta: %v\n\n", rData)
+		return false
+	} else {
+		fmt.Printf("\nNo se puede borrar la carpeta principal.\n")
+		return false
+	}
+}
+
 func exploredUnit(mainfolder string) {
 	opt := ""
 	i := 1
@@ -284,16 +313,17 @@ func exploredUnit(mainfolder string) {
 		fmt.Printf("s - Subir fichero\n")
 		fmt.Printf("c - Crear carpeta\n")
 		if folderName != "my-unit" {
+			fmt.Printf("b - Borrar carpeta\n")
 			fmt.Printf("v - Volver\n")
 		}
 		fmt.Printf("q - Salir\n")
 		fmt.Printf("Opcion: ")
 		fmt.Scanf("%s\n", &opt)
 
-		if opt != "q" && opt != "s" && opt != "v" && opt != "c" {
+		if opt != "q" && opt != "s" && opt != "v" && opt != "c" && opt != "b" {
 			iter, err := strconv.Atoi(opt)
 			if err != nil {
-				fmt.Println("\nDebes introducir un número de la lista o q, ha introducido " + opt + "\n")
+				fmt.Println("\nDebes introducir un número de la lista o q, ha introducido " + opt)
 			} else {
 				for key, value := range foldersIds {
 					if key == iter {
@@ -311,35 +341,49 @@ func exploredUnit(mainfolder string) {
 				}
 			}
 		} else {
-
 			switch opt {
 			case "s":
 				uploadFile()
 			case "v":
 				delete(foldersBreadcrumbs, folderID)
 				for key, value := range foldersBreadcrumbs {
-					match = true
 					folderID = key
 					folderName = value
 					error = false
 				}
 			case "q":
-				fmt.Printf("\nBienvenido a su espacio personal " + usuario.Name + "\n")
+				fmt.Printf("\nBienvenido a su espacio personal " + usuario.Name + "\n\n")
 			case "c":
-				crearCarpeta(folderID)
-				error = false
+				if crearCarpeta(folderID) {
+					error = false
+				}
+			case "b":
+				if borrarCarpeta(folderID) {
+					delete(foldersBreadcrumbs, folderID)
+					folderID = folder.FolderParent
+					for key, value := range foldersBreadcrumbs {
+						if key == folderID {
+							folderName = value
+						}
+					}
+					error = false
+				}
 			}
 		}
 	}
 }
 
 func loggedMenu() {
-	fmt.Printf("\nBienvenido a su espacio personal " + usuario.Name + "\n")
+	yellow := color.New(color.FgHiYellow).PrintfFunc()
+	yellow("\nBienvenido a su espacio personal " + usuario.Name + ".\n")
+	yellow("---------------------------------------------------\n")
 
 	opt := ""
 	for opt != "q" {
-		fmt.Printf("\n1 - Explorar mi espacio\nl - Logout\nq - Salir\nOpcion: ")
+		color.Set(color.FgBlue)
+		fmt.Printf("1 - Explorar mi espacio\nl - Logout\nq - Salir\nOpcion: ")
 		fmt.Scanf("%s\n", &opt)
+		color.Unset()
 		switch opt {
 		case "1":
 			exploredUnit(usuario.MainFolder)
@@ -407,7 +451,10 @@ func main() {
 	loadData()
 	defer saveData()
 	createClient()
-	fmt.Printf("\nBienvenido a SincroNice\n")
+
+	color.Yellow("\n===================================================")
+	color.Yellow("============= Bienvenido a SincroNice =============")
+	color.Yellow("===================================================\n")
 
 	logged := false
 
@@ -421,8 +468,10 @@ func main() {
 			logged = false
 		}
 		if !logged {
+			color.Set(color.FgBlue)
 			fmt.Printf("1 - Login\n2 - Registro\nq - Salir\nOpcion: ")
 			fmt.Scanf("%s\n", &opt)
+			color.Unset()
 		}
 
 		switch opt {
@@ -431,9 +480,9 @@ func main() {
 		case "2":
 			registry()
 		case "q":
-			fmt.Println("Adios")
+			color.Green("Adios, gracias por usarnos.")
 		default:
-			fmt.Println("Intoduzca una opción correcta")
+			color.Red("Intoduzca una opción correcta")
 		}
 	}
 }
