@@ -1,8 +1,6 @@
 package main
 
 import (
-
-	// "context"
 	"SincroNice/crypto"
 	"SincroNice/types"
 	"crypto/rand"
@@ -33,7 +31,7 @@ func chk(e error) {
 }
 
 const maxUploadSize = 2 * 1024 // 2 MB
-const uploadPath = "./tmp"
+const uploadPath = "/home/martinlaizg/go/src/SincroNice/server/tmp/"
 
 // response : recibe un objeto de un struct para responder al cliente
 func response(w io.Writer, m interface{}) {
@@ -101,6 +99,60 @@ func getFolder(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func checkBlock(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+	hash := crypto.Decode64(req.Form.Get("hash"))
+	r.Status = false
+	r.Msg = types.GenXid()
+	for _, block := range blocks {
+		if string(block.Hash) == string(hash) {
+			r.Status = true
+			r.Msg = block.ID
+		}
+	}
+	response(w, r)
+}
+
+func uploadBlock(w http.ResponseWriter, req *http.Request) {
+	req.ParseMultipartForm(1)
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+	blockID := req.PostFormValue("blockID")
+	block, _, err := req.FormFile("fileupload") // Obtenemos el fichero
+	defer block.Close()
+	chk(err)
+	blockBytes, err := ioutil.ReadAll(block) // Lo pasamos a bytes
+	chk(err)
+	hash := crypto.Hash(blockBytes)
+	blockT := types.Block{
+		ID:   blockID,
+		Hash: hash[:]}
+	blocks[blockT.ID] = blockT
+	newPath := uploadPath + blockID
+	newBlock, err := os.Create(newPath)
+	defer newBlock.Close()
+	chk(err)
+	_, err = newBlock.Write(blockBytes)
+	newBlock.Sync()
+	chk(err)
+	r.Status = true
+	response(w, r)
+}
+
+func uploadFile(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	r.Status = true
+	r.Msg = "Fichero subido correctamente"
+
+	usuarioID := req.Form.Get("")
+
+	w.Header().Set("Content-Type", "application/json")
+	response(w, r)
+}
+
 // RunServer : run sincronice server
 func main() {
 	loadData()
@@ -117,8 +169,11 @@ func main() {
 	router.HandleFunc("/login", loginHandler)
 	router.HandleFunc("/register", registerHandler)
 	router.HandleFunc("/checkToken", checkTokenHandler)
+	router.HandleFunc("/checkBlock", checkBlock)
+	router.HandleFunc("/uploadBlock", uploadBlock)
 	router.HandleFunc("/u/{id}/my-unit", getMainFolder)
 	router.HandleFunc("/u/{id}/folders/{folderId}", getFolder)
+	router.HandleFunc("/u/{id}/folders/{folderId}/upload", uploadFile)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 
@@ -153,6 +208,10 @@ func loadData() {
 	chk(err)
 	err = json.Unmarshal(raw, &files)
 	chk(err)
+	raw, err = ioutil.ReadFile("./db/blocks.json")
+	chk(err)
+	err = json.Unmarshal(raw, &blocks)
+	chk(err)
 	log.Println("Data loaded")
 }
 
@@ -169,6 +228,10 @@ func saveData() {
 	raw, err = json.Marshal(files)
 	chk(err)
 	err = ioutil.WriteFile("./db/files.json", raw, 0777)
+	chk(err)
+	raw, err = json.Marshal(blocks)
+	chk(err)
+	err = ioutil.WriteFile("./db/blocks.json", raw, 0777)
 	chk(err)
 	log.Println("Data saved")
 }
