@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/howeyc/gopass"
 )
 
@@ -199,29 +200,10 @@ func createClient() {
 	client = &http.Client{Transport: tr}
 }
 
-func explorarMiUnidad() bool {
-	data := url.Values{}
-	data.Set("id", crypto.Encode64([]byte(usuario.ID)))
-
-	response := send("/u/{usuario.ID}/my-unit", data)
-	bData, err := ioutil.ReadAll(response.Body)
-	chk(err)
-	var rData types.Folder
-	err = json.Unmarshal(bData, &rData)
-	chk(err)
-
-	if rData.ID != "" {
-		fmt.Printf("\nSe encuentra en su directorio personal\n")
-		folder = rData
-		return true
-	}
-	fmt.Printf("Error al recuperar la carpeta personal: %v\n\n", rData)
-	return false
-}
-
 func getFolder(id string) bool {
 	data := url.Values{}
 	data.Set("id", crypto.Encode64([]byte(usuario.ID)))
+	data.Set("token", crypto.Encode64([]byte(usuario.Token)))
 	data.Set("folderId", crypto.Encode64([]byte(id)))
 
 	response := send("/u/{usuario.ID}/folders/{id}", data)
@@ -240,43 +222,152 @@ func getFolder(id string) bool {
 	return false
 }
 
+func crearCarpeta(actualFolder string) bool {
+	fmt.Print("Introduzca el nombre de la carpeta: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	folderName := scanner.Text()
+
+	fmt.Printf("\nCreando la carpeta con el nombre %s...", folderName)
+	data := url.Values{}
+	data.Set("user", crypto.Encode64([]byte(usuario.ID)))
+	data.Set("token", crypto.Encode64([]byte(usuario.Token)))
+	data.Set("actualFolder", crypto.Encode64([]byte(actualFolder)))
+	data.Set("folderName", crypto.Encode64([]byte(folderName)))
+
+	response := send("/u/{usuario.ID}/folders", data)
+	bData, err := ioutil.ReadAll(response.Body)
+	chk(err)
+
+	var rData types.Folder
+	err = json.Unmarshal(bData, &rData)
+	chk(err)
+
+	if rData.Folders != nil {
+		fmt.Println("\nLa carpeta con nombre " + rData.Name + " se ha creado correctamente.")
+		return true
+	}
+	fmt.Printf("Error al crear la carpeta: %v\n\n", rData)
+	return false
+}
+
+func borrarCarpeta(deleteFolder string) bool {
+	if deleteFolder != usuario.MainFolder {
+		fmt.Printf("\nBorrando la carpeta con el nombre %s...", folder.Name)
+		data := url.Values{}
+		data.Set("user", crypto.Encode64([]byte(usuario.ID)))
+		data.Set("token", crypto.Encode64([]byte(usuario.Token)))
+		data.Set("folder", crypto.Encode64([]byte(deleteFolder)))
+
+		response := send("/u/{usuario.ID}/folders/delete/{deleteFolder}", data)
+		bData, err := ioutil.ReadAll(response.Body)
+		chk(err)
+
+		var rData types.Folder
+		err = json.Unmarshal(bData, &rData)
+		chk(err)
+
+		if rData.Folders != nil {
+			fmt.Println("\nLa carpeta con nombre " + rData.Name + " se ha borrado correctamente.")
+			return true
+		}
+		fmt.Printf("\nError al borrar la carpeta: %v\n\n", rData)
+		return false
+	} else {
+		fmt.Printf("\nNo se puede borrar la carpeta principal.\n")
+		return false
+	}
+}
+
 func exploredUnit(mainfolder string) {
 	opt := ""
 	i := 1
 	match := false
+	error := false
 	var foldersIds map[int][]string
+	var foldersBreadcrumbs map[string]string
+	foldersBreadcrumbs = make(map[string]string)
 	foldersIds = make(map[int][]string)
 	folderID := mainfolder
+	folderName := "my-unit"
 	for opt != "q" {
-		_ = getFolder(folderID)
+		i = 1
+		foldersIds = make(map[int][]string)
+
+		if foldersBreadcrumbs[folderID] == "" || !error {
+			_ = getFolder(folderID)
+			foldersBreadcrumbs[folderID] = folderName
+		}
 
 		match = false
-		for key, value := range folder.Folders {
-			fmt.Println(i, "- "+value+" ("+key+")")
-			foldersIds[i] = []string{key, value}
-			i = i + 1
+		if len(folder.Folders) != 0 {
+			for key, value := range folder.Folders {
+				fmt.Println(i, "- "+value+" ("+key+")")
+				foldersIds[i] = []string{key, value}
+				i = i + 1
+			}
+		} else {
+			fmt.Println("-- No hay ningún archivo ni directorio. --")
 		}
-		fmt.Printf("s - Subir fichero\nq - Salir\nOpcion: ")
+
+		fmt.Println("------------------------------------------")
+		fmt.Printf("s - Subir fichero\n")
+		fmt.Printf("c - Crear carpeta\n")
+		if folderName != "my-unit" {
+			fmt.Printf("b - Borrar carpeta\n")
+			fmt.Printf("v - Volver\n")
+		}
+		fmt.Printf("q - Salir\n")
+		fmt.Printf("Opcion: ")
 		fmt.Scanf("%s\n", &opt)
 
-		switch opt {
-		case "s":
-			uploadFile()
-		case "q":
+		if opt != "q" && opt != "s" && opt != "v" && opt != "c" && opt != "b" {
 			iter, err := strconv.Atoi(opt)
 			if err != nil {
-				fmt.Println("\nDebes introducir un número de la lista o q, ha introducido " + opt + "\n")
+				fmt.Println("\nDebes introducir un número de la lista o q, ha introducido " + opt)
 			} else {
 				for key, value := range foldersIds {
 					if key == iter {
 						i = 1
 						match = true
 						folderID = value[0]
+						folderName = value[1]
+						error = false
 					}
 				}
 				if !match {
-					fmt.Printf("\nLa opción introducida no existe, debe escoger de entre la lista\n")
+					fmt.Println("\nLa opción introducida no existe, debe escoger de entre la lista\n")
 					i = 1
+					error = true
+				}
+			}
+		} else {
+			switch opt {
+			case "s":
+				uploadFile()
+			case "v":
+				delete(foldersBreadcrumbs, folderID)
+				for key, value := range foldersBreadcrumbs {
+					folderID = key
+					folderName = value
+					error = false
+				}
+			case "q":
+				fmt.Printf("\nBienvenido a su espacio personal " + usuario.Name + "\n\n")
+			case "c":
+				if crearCarpeta(folderID) {
+					error = false
+				}
+			case "b":
+				if borrarCarpeta(folderID) {
+					delete(foldersBreadcrumbs, folderID)
+					folderID = folder.FolderParent
+					for key, value := range foldersBreadcrumbs {
+						if key == folderID {
+							folderName = value
+						}
+					}
+					error = false
 				}
 			}
 		}
@@ -284,17 +375,21 @@ func exploredUnit(mainfolder string) {
 }
 
 func loggedMenu() {
-	fmt.Printf("\nBienvenido a su espacio personal " + usuario.Name + "\n")
+	yellow := color.New(color.FgHiYellow).PrintfFunc()
+	yellow("\nBienvenido a su espacio personal " + usuario.Name + ".\n")
+	yellow("---------------------------------------------------\n")
 
 	opt := ""
 	for opt != "q" {
-		fmt.Printf("\n1 - Explorar mi espacio\nl - Logout\nq - Salir\nOpcion: ")
+		color.Set(color.FgBlue)
+		fmt.Printf("1 - Explorar mi espacio\nl - Logout\nq - Salir\nOpcion: ")
 		fmt.Scanf("%s\n", &opt)
+		color.Unset()
 		switch opt {
 		case "1":
 			exploredUnit(usuario.MainFolder)
 		case "l":
-			fmt.Println("Cerrando sesión...")
+			fmt.Println("\nCerrando sesión...\n")
 			usuario = types.User{}
 			opt = "q"
 		case "q":
@@ -425,7 +520,10 @@ func main() {
 	loadData()
 	defer saveData()
 	createClient()
-	fmt.Printf("\nBienvenido a SincroNice\n\n")
+
+	color.Yellow("\n===================================================")
+	color.Yellow("============= Bienvenido a SincroNice =============")
+	color.Yellow("===================================================\n")
 
 	logged := false
 
@@ -439,8 +537,10 @@ func main() {
 			logged = false
 		}
 		if !logged {
+			color.Set(color.FgBlue)
 			fmt.Printf("1 - Login\n2 - Registro\nq - Salir\nOpcion: ")
 			fmt.Scanf("%s\n", &opt)
+			color.Unset()
 		}
 
 		switch opt {
@@ -449,9 +549,9 @@ func main() {
 		case "2":
 			registry()
 		case "q":
-			fmt.Println("Adios")
+			color.Green("Adios, gracias por usarnos.")
 		default:
-			fmt.Println("Intoduzca una opción correcta")
+			color.Red("Intoduzca una opción correcta")
 		}
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -76,6 +77,7 @@ func getFolder(w http.ResponseWriter, req *http.Request) {
 
 	userID := string(crypto.Decode64(req.Form.Get("id")))
 	folderID := string(crypto.Decode64(req.Form.Get("folderId")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
 
 	user, exist := users[userID]
 	if !exist {
@@ -84,17 +86,136 @@ func getFolder(w http.ResponseWriter, req *http.Request) {
 		response(w, r)
 		log.Printf("Fail access to user %s", user.Email)
 	} else {
-		folder, exist := folders[folderID]
-		if !exist {
-			r.Status = false
-			r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
-			response(w, r)
-			log.Printf("Fail access to main folder of user %s", user.Email)
+		if chkToken(token, userID) {
+			folder, exist := folders[folderID]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
+				response(w, r)
+				log.Printf("Fail access to main folder of user %s", user.Email)
+			} else {
+				r.Status = true
+				r.Msg = "Hemos encontrado la carpeta"
+				json.NewEncoder(w).Encode(folder)
+				log.Printf("The user %s has correctly accessed the folder %s", user.Email, folder.Name)
+			}
 		} else {
-			r.Status = true
-			r.Msg = "La carpeta no se ha podido encontrar"
-			json.NewEncoder(w).Encode(folder)
-			log.Printf("The user %s has correctly accessed the folder %s", user.Email, folder.Name)
+			r.Status = false
+			r.Msg = "El token utilizado no es correcto."
+			response(w, r)
+			log.Printf("Fail access to user %s", user.Email)
+		}
+	}
+}
+
+func deleteSubFolders(subFolders map[string]string) {
+	for key, value := range folders {
+		for key2 := range subFolders {
+			if key == key2 {
+				if len(value.Folders) != 0 {
+					deleteSubFolders(value.Folders)
+				} else {
+					delete(folders, key)
+				}
+				delete(folders, key)
+			}
+		}
+	}
+}
+
+func deleteFolder(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := string(crypto.Decode64(req.Form.Get("user")))
+	folderID := string(crypto.Decode64(req.Form.Get("folder")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
+
+	user, exist := users[userID]
+	if !exist {
+		r.Status = false
+		r.Msg = "El usuario al que se intenta acceder no existe."
+		response(w, r)
+		log.Printf("Fail access to user %s", user.Email)
+	} else {
+		if chkToken(token, userID) {
+			folder, exist := folders[folderID]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
+				response(w, r)
+				log.Printf("Fail access to main folder of user %s", user.Email)
+			} else {
+				r.Status = true
+				r.Msg = "Hemos eliminado la carpeta"
+				for key, value := range folders {
+					if key == folderID {
+						deleteSubFolders(folder.Folders)
+						delete(folders, key)
+					}
+					delete(value.Folders, folderID)
+				}
+				json.NewEncoder(w).Encode(folder)
+				log.Printf("The user %s has correctly deleted the folder %s", user.Email, folder.Name)
+			}
+		} else {
+			r.Status = false
+			r.Msg = "El token utilizado no es correcto."
+			response(w, r)
+			log.Printf("Fail access to user %s", user.Email)
+		}
+	}
+}
+
+func createFolder(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := string(crypto.Decode64(req.Form.Get("user")))
+	folderName := string(crypto.Decode64(req.Form.Get("folderName")))
+	actualFolder := string(crypto.Decode64(req.Form.Get("actualFolder")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
+
+	user, exist := users[userID]
+	if !exist {
+		r.Status = false
+		r.Msg = "El usuario al que se intenta acceder no existe."
+		response(w, r)
+		log.Printf("Fail access to user %s", user.Email)
+	} else {
+		if chkToken(token, userID) {
+			folder, exist := folders[actualFolder]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
+				response(w, r)
+				log.Printf("Fail access to main folder of user %s", user.Email)
+			} else {
+				folderID := types.GenXid()
+				folder.Folders[folderID] = folderName
+				folder := types.Folder{
+					ID:           folderID,
+					UserID:       userID,
+					Name:         folderName,
+					Path:         "/",
+					Created:      time.Now().UTC().String(),
+					Updated:      time.Now().UTC().String(),
+					FolderParent: folder.ID,
+					Folders:      make(map[string]string),
+					Files:        make(map[string]string)}
+				folders[folderID] = folder
+				r.Status = true
+				r.Msg = "La carpeta ha sido creada correctamente"
+				json.NewEncoder(w).Encode(folder)
+				log.Printf("The user %s has correctly created the folder %s", user.Email, folder.Name)
+			}
+		} else {
+			r.Status = false
+			r.Msg = "El token utilizado no es correcto."
+			response(w, r)
+			log.Printf("Fail access to user %s", user.Email)
 		}
 	}
 }
@@ -220,6 +341,8 @@ func main() {
 	router.HandleFunc("/u/{id}/my-unit", getMainFolder)
 	router.HandleFunc("/u/{id}/folders/{folderId}", getFolder)
 	router.HandleFunc("/u/{id}/folders/{folderId}/upload", uploadFile)
+	router.HandleFunc("/u/{id}/folders", createFolder)
+	router.HandleFunc("/u/{id}/folders/delete/{folderId}", deleteFolder)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 
