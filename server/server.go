@@ -132,6 +132,54 @@ func deleteSubFolders(subFolders map[string]string) {
 	}
 }
 
+func deleteFile(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := string(crypto.Decode64(req.Form.Get("user")))
+	fileID := string(crypto.Decode64(req.Form.Get("file")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
+
+	user, exist := users[userID]
+	if !exist {
+		r.Status = false
+		r.Msg = "El usuario al que se intenta acceder no existe."
+		response(w, r)
+		log.Printf("Fail access to user %s", user.Email)
+	} else {
+		if chkToken(token, userID) {
+			file, exist := files[fileID]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
+				response(w, r)
+				log.Printf("Fail access to main folder of user %s", user.Email)
+			} else {
+				if file.OwnerID == user.ID {
+					r.Status = true
+					r.Msg = "Hemos eliminado el archivo"
+					delete(files, file.ID)
+					for _, folder := range folders {
+						for id := range folder.Files {
+							if id == fileID {
+								delete(folder.Files, fileID)
+							}
+						}
+					}
+					json.NewEncoder(w).Encode(file)
+					log.Printf("The user %s has correctly deleted the file %s", user.Email, file.Name)
+				} else {
+					r.Status = false
+					r.Msg = "No tienes permiso para eliminar el archivo"
+					response(w, r)
+					log.Printf("Fail access to user %s to file %s", user.Email, file.Name)
+				}
+			}
+		}
+	}
+}
+
 func deleteFolder(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	r := types.Response{}
@@ -430,6 +478,7 @@ func main() {
 	router.HandleFunc("/u/{id}/folders/{folderId}/upload", uploadFile)
 	router.HandleFunc("/u/{id}/folders", createFolder)
 	router.HandleFunc("/u/{id}/folders/delete/{folderId}", deleteFolder)
+	router.HandleFunc("/u/{id}/files/{fileID}", deleteFile)
 	router.HandleFunc("/checkBlock", checkBlock)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
