@@ -48,8 +48,9 @@ type Folder struct {
 
 // File : tipo de fichero
 type File struct {
-	ID       string
+	Name     string
 	FolderID string
+	OwnerID  string
 	Versions []*Version
 }
 
@@ -63,8 +64,7 @@ type Version struct {
 // Block : tipo de bloque
 type Block struct {
 	ID    string
-	File  string
-	Size  int
+	Hash  []byte
 	Owner string
 }
 

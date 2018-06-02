@@ -26,6 +26,8 @@ var (
 	port    = "8081"
 )
 
+const uploadPath = "C:/Users/pedro/go/src/SincroNice/server/tmp/"
+
 func chk(e error) {
 	if e != nil {
 		panic(e)
@@ -33,7 +35,6 @@ func chk(e error) {
 }
 
 const maxUploadSize = 2 * 1024 // 2 MB
-const uploadPath = "./tmp"
 
 // response : recibe un objeto de un struct para responder al cliente
 func response(w io.Writer, m interface{}) {
@@ -119,6 +120,8 @@ func main() {
 	router.HandleFunc("/checkToken", checkTokenHandler)
 	router.HandleFunc("/u/{id}/my-unit", getMainFolder)
 	router.HandleFunc("/u/{id}/folders/{folderId}", getFolder)
+	router.HandleFunc("/uploadDrive", uploadDriveHandler)
+	router.HandleFunc("/checkBlock", checkBlockHandler)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 
@@ -153,6 +156,10 @@ func loadData() {
 	chk(err)
 	err = json.Unmarshal(raw, &files)
 	chk(err)
+	raw, err = ioutil.ReadFile("./db/blocks.json")
+	chk(err)
+	err = json.Unmarshal(raw, &blocks)
+	chk(err)
 	log.Println("Data loaded")
 }
 
@@ -170,10 +177,12 @@ func saveData() {
 	chk(err)
 	err = ioutil.WriteFile("./db/files.json", raw, 0777)
 	chk(err)
+	raw, err = json.Marshal(blocks)
+	chk(err)
+	err = ioutil.WriteFile("./db/blocks.json", raw, 0777)
+	chk(err)
 	log.Println("Data saved")
 }
-
-//https://astaxie.gitbooks.io/build-web-application-with-golang/en/04.5.html
 
 func renderError(w http.ResponseWriter, message string, statusCode int) {
 	w.WriteHeader(http.StatusBadRequest)
