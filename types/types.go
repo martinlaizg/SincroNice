@@ -52,21 +52,20 @@ type File struct {
 	ID       string
 	Name     string
 	FolderID string
-	Versions []*Version
+	OwnerID  string
+	Versions []Version
 }
 
 // Version : versión
 type Version struct {
 	ID     string
-	Name   string
 	Blocks []string
 }
 
 // Block : tipo de bloque
 type Block struct {
 	ID    string
-	File  string
-	Size  int
+	Hash  []byte
 	Owner string
 }
 

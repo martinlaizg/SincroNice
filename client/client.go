@@ -400,15 +400,21 @@ func loggedMenu() {
 	}
 }
 
+/**
+Solicita el fichero que quiere subir el usuario
+Trocea el fichero en bloques de 1MB
+Y genera el fichero para el servidor
+*/
 func uploadFile() bool {
 	fmt.Printf("Indique el fichero: ")
-	path := "/home/martinlaizg/Desktop/doc.bat"
-	// fmt.Scanf("%s\n", &path)
+
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	path := scanner.Text()
+	path = strings.Replace(path, "\\", "", -1)
 	tokens := strings.Split(path, "/")
 	fileName := tokens[len(tokens)-1]
-
-	fmt.Println(fileName)
-
+	fmt.Println()
 	file, err := os.Open(path)
 	chk(err)
 	defer file.Close()
@@ -416,35 +422,97 @@ func uploadFile() bool {
 	var fileSize int64 = fileInfo.Size()
 	const fileChunk = 1 * (1 << 20) // 1 MB
 	totalPartsNum := uint64(math.Ceil(float64(fileSize) / float64(fileChunk)))
-	fmt.Printf("Splitting to %d pieces.\n", totalPartsNum)
-	fileChuked := make(map[[64]byte][]byte)
-	parts := [][64]byte{}
-
-	newPath := "/home/martinlaizg/Desktop/documento.sh"
-	chk(err)
-
+	version := types.Version{
+		ID: types.GenXid(),
+	}
+	fmt.Println("Subiendo archivo...")
 	for i := uint64(0); i < totalPartsNum; i++ {
 		partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
 		partBuffer := make([]byte, partSize)
-
 		file.Read(partBuffer)
 
-		hash := crypto.Hash(partBuffer)
-		fileChuked[hash] = partBuffer
-		parts = append(parts, hash)
-		// // write to disk
-		// fileName := "somebigfile_" + strconv.FormatUint(i, 10)
-		// _, err := os.Create(fileName)
-		// chk(err)
-		// // write/save buffer to disk
-		// fmt.Println("Split to : ", fileName)
+		blockID := checkBlock(partBuffer) // Obtiene el id del bloque en el servidor
+		version.Blocks = append(version.Blocks, blockID)
 	}
-	_, err = os.Create(newPath)
-	for _, value := range parts {
-		ioutil.WriteFile(newPath, fileChuked[value], os.ModeAppend)
+	fileT := types.File{
+		FolderID: folder.ID,
+		Name:     fileName,
+		OwnerID:  usuario.ID,
+		Versions: append(make([]types.Version, 0), version),
 	}
+	return uploadFileT(fileT)
+}
 
+/**
+Sube el tipo fichero al servidor
+*/
+func uploadFileT(file types.File) bool {
+	data := url.Values{}
+	fileB, err := json.Marshal(file)
+	chk(err)
+	data.Set("file", crypto.Encode64(fileB))
+	data.Set("user", crypto.Encode64([]byte(usuario.ID)))
+	data.Set("folder", crypto.Encode64([]byte(folder.ID)))
+	data.Set("token", crypto.Encode64([]byte(usuario.Token)))
+
+	resp := send("/u/"+usuario.ID+"/folders/"+folder.ID+"/upload", data)
+	bData, err := ioutil.ReadAll(resp.Body)
+	chk(err)
+	response := types.Response{}
+	err = json.Unmarshal(bData, &response)
+	chk(err)
+	if !response.Status {
+		fmt.Println("Error: " + response.Msg)
+		return false
+	}
+	fmt.Println("Archivo subido con éxito")
 	return true
+}
+
+/**
+Comprueba si existe el bloque en el seridor enviando el hash
+Si no existe lo manda
+Devuelve el identificador del bloque
+*/
+
+func checkBlock(buffer []byte) string {
+	hash := crypto.Hash(buffer)
+	hash64 := crypto.Encode64(hash[:])
+	data := url.Values{}
+	data.Set("hash", hash64)
+	resp := send("/checkBlock", data)
+	bData, err := ioutil.ReadAll(resp.Body)
+	chk(err)
+	response := types.Response{}
+	err = json.Unmarshal(bData, &response)
+	chk(err)
+	blockID := response.Msg
+
+	if !response.Status {
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile("fileupload", blockID)
+		chk(err)
+		_, err = io.Copy(part, bytes.NewReader(buffer))
+		chk(err)
+		_ = writer.WriteField("userID", crypto.Encode64([]byte(usuario.ID)))
+		_ = writer.WriteField("folderID", crypto.Encode64([]byte(folder.ID)))
+		_ = writer.WriteField("blockID", crypto.Encode64([]byte(blockID)))
+		err = writer.Close()
+		chk(err)
+		req, err := http.NewRequest("POST", baseURL+"/uploadBlock", body)
+		chk(err)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		resp, err := client.Do(req)
+		chk(err)
+		bData, err := ioutil.ReadAll(resp.Body)
+		chk(err)
+		response := types.Response{}
+		err = json.Unmarshal(bData, &response)
+		chk(err)
+
+	}
+	return blockID
 }
 
 // RunClient : run sincronice client

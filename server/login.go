@@ -169,5 +169,9 @@ func checkTokenHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func chkToken(token string, id string) bool {
-	return users[id].Token == token
+	user, exist := users[id]
+	if !exist {
+		return exist
+	}
+	return user.Token == token
 }
