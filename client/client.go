@@ -285,8 +285,6 @@ func exploredUnit(mainfolder string) {
 	match := false
 	error := false
 	var foldersIds map[int][]string
-	var foldersBreadcrumbs map[string]string
-	foldersBreadcrumbs = make(map[string]string)
 	foldersIds = make(map[int][]string)
 	folderID := mainfolder
 	folderName := "my-unit"
@@ -294,9 +292,9 @@ func exploredUnit(mainfolder string) {
 		i = 1
 		foldersIds = make(map[int][]string)
 
-		if foldersBreadcrumbs[folderID] == "" || !error {
+		if !error {
 			_ = getFolder(folderID)
-			foldersBreadcrumbs[folderID] = folderName
+			folderName = folder.Name
 		}
 
 		match = false
@@ -346,12 +344,7 @@ func exploredUnit(mainfolder string) {
 			case "s":
 				uploadFile()
 			case "v":
-				delete(foldersBreadcrumbs, folderID)
-				for key, value := range foldersBreadcrumbs {
-					folderID = key
-					folderName = value
-					error = false
-				}
+				folderID = folder.FolderParent
 			case "q":
 				fmt.Printf("\nBienvenido a su espacio personal " + usuario.Name + "\n\n")
 			case "c":
@@ -360,13 +353,7 @@ func exploredUnit(mainfolder string) {
 				}
 			case "b":
 				if borrarCarpeta(folderID) {
-					delete(foldersBreadcrumbs, folderID)
 					folderID = folder.FolderParent
-					for key, value := range foldersBreadcrumbs {
-						if key == folderID {
-							folderName = value
-						}
-					}
 					error = false
 				}
 			}
