@@ -1,6 +1,7 @@
 package main
 
 import (
+	"SincroNice/types"
 	"fmt"
 	"io"
 	"log"
@@ -36,6 +37,14 @@ func uploadHandler(w http.ResponseWriter, req *http.Request) {
 		log.Println("Fail registry, user " + email + " already exist")
 		return
 	}*/
+	NewFile := types.File{
+		ID:       name,
+		FolderID: "default"}
 
+	files[name] = NewFile
+	resp := types.Response{
+		Status: true,
+		Msg:    "Subido correctamente"}
+	response(w, resp)
 	log.Println("File " + name + " upload successful")
 }

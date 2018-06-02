@@ -1,4 +1,0 @@
-idCliente:
-911558029063-dq748ggiql1cmtuua1p7a041p2homu78.apps.googleusercontent.com
-secret:
-Ds7mfS4htzoUMUgwbAx6iM6C
