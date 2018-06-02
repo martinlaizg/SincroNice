@@ -44,7 +44,58 @@ func send(endpoint string, data url.Values) *http.Response {
 	return r
 }
 
+func subir() {
+
+	fmt.Printf("\nFichero:")
+	var ruta string
+	fmt.Scanln(&ruta)
+
+	//parts := make(map[string]byte[])
+
+	carpetas := strings.Split(ruta, "/")
+	nombre := carpetas[len(carpetas)-1]
+
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+
+	// this step is very important
+	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", nombre)
+	if err != nil {
+		color.Red("error writing to buffer")
+	}
+
+	// open file handle
+	fh, err := os.Open(ruta)
+	if err != nil {
+		color.Red("error opening file")
+	}
+	defer fh.Close()
+
+	//iocopy
+	_, err = io.Copy(fileWriter, fh)
+	if err != nil {
+	}
+
+	contentType := bodyWriter.FormDataContentType()
+	bodyWriter.Close()
+
+	response, err := client.Post(baseURL+"/upload", contentType, bodyBuf)
+
+	bData, err := ioutil.ReadAll(response.Body)
+	chk(err)
+	var rData types.Response
+	err = json.Unmarshal(bData, &rData)
+	chk(err)
+
+	if rData.Status == true {
+		color.Green("Subido correctamente\n")
+		return
+	}
+	color.Red("Error al subir el archivo: %v\n", rData.Msg)
+}
+
 func login() bool {
+	color.Set(color.FgHiYellow)
 	fmt.Print("\nLogin\n")
 	fmt.Print("Email: ")
 	var email string
@@ -52,8 +103,9 @@ func login() bool {
 	fmt.Print("Password: ")
 	bpass, err := gopass.GetPasswdMasked()
 	chk(err)
+	color.Unset()
 
-	fmt.Printf("\nAcceso como %s...\n", email)
+	color.Yellow("\nAcceso como %s...\n", email)
 
 	pass := crypto.Hash(bpass)
 
@@ -69,7 +121,7 @@ func login() bool {
 	chk(err)
 
 	if !rData.Status {
-		fmt.Println(rData.Msg)
+		color.Red(rData.Msg)
 		return false
 	}
 	usuario = rData.User
@@ -77,11 +129,13 @@ func login() bool {
 }
 
 func solicitarToken() bool {
+	color.Set(color.FgHiYellow)
 	fmt.Println("Introduzca el token que le hemos enviado por correo electrónico")
 	fmt.Print("Token: ")
 	var token string
 	fmt.Scanln(&token)
 	data := url.Values{}
+	color.Unset()
 
 	data.Set("id", crypto.Encode64([]byte(usuario.ID)))
 	data.Set("email", crypto.Encode64([]byte(usuario.Email)))
@@ -97,16 +151,17 @@ func solicitarToken() bool {
 
 	if resp.Status == true {
 		usuario = resp.User
-		fmt.Println("Sesión verificada correctamente")
+		color.Green("Sesión verificada correctamente")
 	} else {
 		usuario = types.User{}
-		fmt.Println("El token introducido no coincide")
+		color.Red("El token introducido no coincide")
 		return false
 	}
 	return true
 }
 
 func registry() {
+	color.Set(color.FgHiYellow)
 	fmt.Printf("\nRegistro\n")
 	fmt.Print("Nombre: ")
 	scanner := bufio.NewScanner(os.Stdin)
@@ -119,8 +174,9 @@ func registry() {
 	fmt.Print("Contraseña: ")
 	bpass, err := gopass.GetPasswdMasked() // Obtengo la contraseña
 	chk(err)
+	color.Unset()
 
-	fmt.Printf("\nRegistrandose como %v... \n", email)
+	color.Yellow("\nRegistrandose como %v... \n", email)
 	pass := crypto.Hash(bpass) // Hasheamos la contraseña con SHA512
 
 	data := url.Values{}
@@ -136,10 +192,10 @@ func registry() {
 	chk(err)
 
 	if resp.Status == true {
-		fmt.Printf("Registrado correctamente\n\n")
+		color.Green("Registrado correctamente\n\n")
 		return
 	}
-	fmt.Printf("Error al registrarse: %v\n\n", resp.Msg)
+	color.Red("Error al registrarse: %v\n\n", resp.Msg)
 }
 
 func createClient() {
@@ -163,21 +219,23 @@ func getFolder(id string) bool {
 	chk(err)
 
 	if rData.Folders != nil {
-		fmt.Println("\nSe encuentra en el directorio " + rData.Name + "\n")
+		color.Magenta("\nSe encuentra en el directorio " + rData.Name + "\n")
 		folder = rData
 		return true
 	}
-	fmt.Printf("Error al recuperar la carpeta: %v\n\n", rData)
+	color.Red("Error al recuperar la carpeta: %v\n\n", rData)
 	return false
 }
 
 func crearCarpeta(actualFolder string) bool {
-	fmt.Print("Introduzca el nombre de la carpeta: ")
+	color.Set(color.FgHiYellow)
+	fmt.Printf("Introduzca el nombre de la carpeta: ")
+	color.Unset()
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	folderName := scanner.Text()
 
-	fmt.Printf("\nCreando la carpeta con el nombre %s...", folderName)
+	color.Yellow("\nCreando la carpeta con el nombre %s...", folderName)
 	data := url.Values{}
 	data.Set("user", crypto.Encode64([]byte(usuario.ID)))
 	data.Set("token", crypto.Encode64([]byte(usuario.Token)))
@@ -193,16 +251,16 @@ func crearCarpeta(actualFolder string) bool {
 	chk(err)
 
 	if rData.Folders != nil {
-		fmt.Println("\nLa carpeta con nombre " + rData.Name + " se ha creado correctamente.")
+		color.Green("\nLa carpeta con nombre " + rData.Name + " se ha creado correctamente.")
 		return true
 	}
-	fmt.Printf("Error al crear la carpeta: %v\n\n", rData)
+	color.Red("Error al crear la carpeta: %v\n\n", rData)
 	return false
 }
 
 func borrarCarpeta(deleteFolder string) bool {
 	if deleteFolder != usuario.MainFolder {
-		fmt.Printf("\nBorrando la carpeta con el nombre %s...", folder.Name)
+		color.Yellow("\nBorrando la carpeta con el nombre %s...", folder.Name)
 		data := url.Values{}
 		data.Set("user", crypto.Encode64([]byte(usuario.ID)))
 		data.Set("token", crypto.Encode64([]byte(usuario.Token)))
@@ -217,13 +275,13 @@ func borrarCarpeta(deleteFolder string) bool {
 		chk(err)
 
 		if rData.Folders != nil {
-			fmt.Println("\nLa carpeta con nombre " + rData.Name + " se ha borrado correctamente.")
+			color.Green("\nLa carpeta con nombre " + rData.Name + " se ha borrado correctamente.")
 			return true
 		}
-		fmt.Printf("\nError al borrar la carpeta: %v\n\n", rData)
+		color.Red("\nError al borrar la carpeta: %v\n\n", rData)
 		return false
 	} else {
-		fmt.Printf("\nNo se puede borrar la carpeta principal.\n")
+		color.Red("\nNo se puede borrar la carpeta principal.\n")
 		return false
 	}
 }
@@ -234,7 +292,9 @@ func exploredUnit(mainfolder string) {
 	match := false
 	error := false
 	var foldersIds map[int][]string
+	var filesIds map[int][]string
 	foldersIds = make(map[int][]string)
+	filesIds = make(map[int][]string)
 	folderID := mainfolder
 	folderName := "my-unit"
 	for opt != "q" {
@@ -248,15 +308,25 @@ func exploredUnit(mainfolder string) {
 
 		match = false
 		if len(folder.Folders) != 0 {
+			color.Set(color.FgBlue)
 			for key, value := range folder.Folders {
 				fmt.Println(i, "- "+value+" ("+key+")")
 				foldersIds[i] = []string{key, value}
 				i = i + 1
 			}
+			color.Unset()
+			if len(folder.Files) != 0 {
+				for key, value := range folder.Files {
+					fmt.Println(i, "- "+value+" ("+key+")")
+					filesIds[i] = []string{key, value}
+					i = i + 1
+				}
+			}
 		} else {
-			fmt.Println("-- No hay ningún archivo ni directorio. --")
+			color.Red("-- No hay ningún archivo ni directorio. --")
 		}
 
+		color.Set(color.FgHiYellow)
 		fmt.Println("------------------------------------------")
 		fmt.Printf("s - Subir fichero\n")
 		fmt.Printf("c - Crear carpeta\n")
@@ -267,11 +337,12 @@ func exploredUnit(mainfolder string) {
 		fmt.Printf("q - Salir\n")
 		fmt.Printf("Opcion: ")
 		fmt.Scanf("%s\n", &opt)
+		color.Unset()
 
 		if opt != "q" && opt != "s" && opt != "v" && opt != "c" && opt != "b" {
 			iter, err := strconv.Atoi(opt)
 			if err != nil {
-				fmt.Println("\nDebes introducir un número de la lista o q, ha introducido " + opt)
+				color.Red("\nDebes introducir un número de la lista o q, ha introducido " + opt)
 			} else {
 				for key, value := range foldersIds {
 					if key == iter {
@@ -283,7 +354,7 @@ func exploredUnit(mainfolder string) {
 					}
 				}
 				if !match {
-					fmt.Println("\nLa opción introducida no existe, debe escoger de entre la lista\n")
+					color.Red("\nLa opción introducida no existe, debe escoger de entre la lista\n")
 					i = 1
 					error = true
 				}
@@ -295,7 +366,8 @@ func exploredUnit(mainfolder string) {
 			case "v":
 				folderID = folder.FolderParent
 			case "q":
-				fmt.Printf("\nBienvenido a su espacio personal " + usuario.Name + "\n\n")
+				color.Magenta("\nBienvenido a su espacio personal, " + usuario.Name + ".\n")
+				color.Magenta("---------------------------------------------------\n")
 			case "c":
 				if crearCarpeta(folderID) {
 					error = false
@@ -311,13 +383,12 @@ func exploredUnit(mainfolder string) {
 }
 
 func loggedMenu() {
-	yellow := color.New(color.FgHiYellow).PrintfFunc()
-	yellow("\nBienvenido a su espacio personal " + usuario.Name + ".\n")
-	yellow("---------------------------------------------------\n")
+	color.Magenta("\nBienvenido a su espacio personal, " + usuario.Name + ".\n")
+	color.Magenta("---------------------------------------------------\n")
 
 	opt := ""
 	for opt != "q" {
-		color.Set(color.FgBlue)
+		color.Set(color.FgHiYellow)
 		fmt.Printf("1 - Explorar mi espacio\nl - Logout\nq - Salir\nOpcion: ")
 		fmt.Scanf("%s\n", &opt)
 		color.Unset()
@@ -325,13 +396,13 @@ func loggedMenu() {
 		case "1":
 			exploredUnit(usuario.MainFolder)
 		case "l":
-			fmt.Println("\nCerrando sesión...\n")
+			color.Yellow("\nCerrando sesión...\n")
 			usuario = types.User{}
 			opt = "q"
 		case "q":
-			fmt.Println("\nHasta la próxima " + usuario.Name + "\n")
+			color.Yellow("\nHasta la próxima " + usuario.Name + "\n")
 		default:
-			fmt.Println("\nIntoduzca una opción correcta")
+			color.Red("\nIntoduzca una opción correcta")
 		}
 	}
 }
@@ -342,7 +413,7 @@ Trocea el fichero en bloques de 1MB
 Y genera el fichero para el servidor
 */
 func uploadFile() bool {
-	fmt.Printf("Indique el fichero: ")
+	color.Yellow("Indique el fichero: ")
 
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
@@ -361,7 +432,7 @@ func uploadFile() bool {
 	version := types.Version{
 		ID: types.GenXid(),
 	}
-	fmt.Println("Subiendo archivo...")
+	color.Yellow("Subiendo archivo...")
 	for i := uint64(0); i < totalPartsNum; i++ {
 		partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
 		partBuffer := make([]byte, partSize)
@@ -398,10 +469,10 @@ func uploadFileT(file types.File) bool {
 	err = json.Unmarshal(bData, &response)
 	chk(err)
 	if !response.Status {
-		fmt.Println("Error: " + response.Msg)
+		color.Red("Error: " + response.Msg)
 		return false
 	}
-	fmt.Println("Archivo subido con éxito")
+	color.Green("Archivo subido con éxito")
 	return true
 }
 
@@ -457,14 +528,15 @@ func main() {
 	defer saveData()
 	createClient()
 
+	logged := false
+	error := false
+
 	color.Yellow("\n===================================================")
 	color.Yellow("============= Bienvenido a SincroNice =============")
 	color.Yellow("===================================================\n")
 
-	logged := false
-
 	for opt := ""; opt != "q"; {
-		if usuario.Token != "" {
+		if usuario.Token != "" && !error {
 			logged = true
 		}
 
@@ -473,7 +545,8 @@ func main() {
 			logged = false
 		}
 		if !logged {
-			color.Set(color.FgBlue)
+			error = false
+			color.Set(color.FgHiYellow)
 			fmt.Printf("1 - Login\n2 - Registro\nq - Salir\nOpcion: ")
 			fmt.Scanf("%s\n", &opt)
 			color.Unset()
@@ -485,9 +558,10 @@ func main() {
 		case "2":
 			registry()
 		case "q":
-			color.Green("Adios, gracias por usarnos.")
+			color.Green("Adios, gracias por usar nuestros servicios.")
 		default:
-			color.Red("Intoduzca una opción correcta")
+			color.Red("\nIntoduzca una opción correcta")
+			error = true
 		}
 	}
 }
