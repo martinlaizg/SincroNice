@@ -79,6 +79,7 @@ func getFolder(w http.ResponseWriter, req *http.Request) {
 
 	userID := string(crypto.Decode64(req.Form.Get("id")))
 	folderID := string(crypto.Decode64(req.Form.Get("folderId")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
 
 	user, exist := users[userID]
 	if !exist {
@@ -87,17 +88,24 @@ func getFolder(w http.ResponseWriter, req *http.Request) {
 		response(w, r)
 		log.Printf("Fail access to user %s", user.Email)
 	} else {
-		folder, exist := folders[folderID]
-		if !exist {
-			r.Status = false
-			r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
-			response(w, r)
-			log.Printf("Fail access to main folder of user %s", user.Email)
+		if chkToken(token, userID) {
+			folder, exist := folders[folderID]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
+				response(w, r)
+				log.Printf("Fail access to main folder of user %s", user.Email)
+			} else {
+				r.Status = true
+				r.Msg = "Hemos encontrado la carpeta"
+				json.NewEncoder(w).Encode(folder)
+				log.Printf("The user %s has correctly accessed the folder %s", user.Email, folder.Name)
+			}
 		} else {
-			r.Status = true
-			r.Msg = "Hemos encontrado la carpeta"
-			json.NewEncoder(w).Encode(folder)
-			log.Printf("The user %s has correctly accessed the folder %s", user.Email, folder.Name)
+			r.Status = false
+			r.Msg = "El token utilizado no es correcto."
+			response(w, r)
+			log.Printf("Fail access to user %s", user.Email)
 		}
 	}
 }
@@ -124,6 +132,7 @@ func deleteFolder(w http.ResponseWriter, req *http.Request) {
 
 	userID := string(crypto.Decode64(req.Form.Get("user")))
 	folderID := string(crypto.Decode64(req.Form.Get("folder")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
 
 	user, exist := users[userID]
 	if !exist {
@@ -132,30 +141,31 @@ func deleteFolder(w http.ResponseWriter, req *http.Request) {
 		response(w, r)
 		log.Printf("Fail access to user %s", user.Email)
 	} else {
-		folder, exist := folders[folderID]
-		if !exist {
-			r.Status = false
-			r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
-			response(w, r)
-			log.Printf("Fail access to main folder of user %s", user.Email)
-		} else {
-			r.Status = true
-			r.Msg = "Hemos eliminado la carpeta"
-			// for key := range folder.Folders {
-			// 	delete(folder.Folders, key)
-			// }
-			// for _, value := range folders {
-			// 	delete(value.Folders, folderID)
-			// }
-			for key, value := range folders {
-				if key == folderID {
-					deleteSubFolders(folder.Folders)
-					delete(folders, key)
+		if chkToken(token, userID) {
+			folder, exist := folders[folderID]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
+				response(w, r)
+				log.Printf("Fail access to main folder of user %s", user.Email)
+			} else {
+				r.Status = true
+				r.Msg = "Hemos eliminado la carpeta"
+				for key, value := range folders {
+					if key == folderID {
+						deleteSubFolders(folder.Folders)
+						delete(folders, key)
+					}
+					delete(value.Folders, folderID)
 				}
-				delete(value.Folders, folderID)
+				json.NewEncoder(w).Encode(folder)
+				log.Printf("The user %s has correctly deleted the folder %s", user.Email, folder.Name)
 			}
-			json.NewEncoder(w).Encode(folder)
-			log.Printf("The user %s has correctly deleted the folder %s", user.Email, folder.Name)
+		} else {
+			r.Status = false
+			r.Msg = "El token utilizado no es correcto."
+			response(w, r)
+			log.Printf("Fail access to user %s", user.Email)
 		}
 	}
 }
@@ -168,6 +178,7 @@ func createFolder(w http.ResponseWriter, req *http.Request) {
 	userID := string(crypto.Decode64(req.Form.Get("user")))
 	folderName := string(crypto.Decode64(req.Form.Get("folderName")))
 	actualFolder := string(crypto.Decode64(req.Form.Get("actualFolder")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
 
 	user, exist := users[userID]
 	if !exist {
@@ -176,30 +187,37 @@ func createFolder(w http.ResponseWriter, req *http.Request) {
 		response(w, r)
 		log.Printf("Fail access to user %s", user.Email)
 	} else {
-		folder, exist := folders[actualFolder]
-		if !exist {
-			r.Status = false
-			r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
-			response(w, r)
-			log.Printf("Fail access to main folder of user %s", user.Email)
+		if chkToken(token, userID) {
+			folder, exist := folders[actualFolder]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
+				response(w, r)
+				log.Printf("Fail access to main folder of user %s", user.Email)
+			} else {
+				folderID := types.GenXid()
+				folder.Folders[folderID] = folderName
+				folder := types.Folder{
+					ID:           folderID,
+					UserID:       userID,
+					Name:         folderName,
+					Path:         "/",
+					Created:      time.Now().UTC().String(),
+					Updated:      time.Now().UTC().String(),
+					FolderParent: folder.ID,
+					Folders:      make(map[string]string),
+					Files:        make(map[string]string)}
+				folders[folderID] = folder
+				r.Status = true
+				r.Msg = "La carpeta ha sido creada correctamente"
+				json.NewEncoder(w).Encode(folder)
+				log.Printf("The user %s has correctly created the folder %s", user.Email, folder.Name)
+			}
 		} else {
-			folderID := types.GenXid()
-			folder.Folders[folderID] = folderName
-			folder := types.Folder{
-				ID:           folderID,
-				UserID:       userID,
-				Name:         folderName,
-				Path:         "/",
-				Created:      time.Now().UTC().String(),
-				Updated:      time.Now().UTC().String(),
-				FolderParent: folder.ID,
-				Folders:      make(map[string]string),
-				Files:        make(map[string]string)}
-			folders[folderID] = folder
-			r.Status = true
-			r.Msg = "La carpeta ha sido creada correctamente"
-			json.NewEncoder(w).Encode(folder)
-			log.Printf("The user %s has correctly created the folder %s", user.Email, folder.Name)
+			r.Status = false
+			r.Msg = "El token utilizado no es correcto."
+			response(w, r)
+			log.Printf("Fail access to user %s", user.Email)
 		}
 	}
 }

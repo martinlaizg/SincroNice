@@ -203,6 +203,7 @@ func createClient() {
 func getFolder(id string) bool {
 	data := url.Values{}
 	data.Set("id", crypto.Encode64([]byte(usuario.ID)))
+	data.Set("token", crypto.Encode64([]byte(usuario.Token)))
 	data.Set("folderId", crypto.Encode64([]byte(id)))
 
 	response := send("/u/{usuario.ID}/folders/{id}", data)
