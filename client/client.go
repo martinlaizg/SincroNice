@@ -44,8 +44,8 @@ func send(endpoint string, data url.Values) *http.Response {
 func subirDrive() bool {
 	fmt.Printf("\nRuta\n")
 	var ruta string
-	//	fmt.Scanln(&ruta)
-	ruta = "C:/prueba.ppt"
+	fmt.Scanln(&ruta)
+	//ruta = "C:/prueba.ppt"
 	fmt.Printf("\nNombre del archivo\n")
 	var nombre string
 	fmt.Scanln(&nombre)
@@ -79,34 +79,6 @@ func subirDrive() bool {
 	}
 
 	return uploadFileT(fileT)
-	//////
-	/*bodyBuf := &bytes.Buffer{}
-	bodyWriter := multipart.NewWriter(bodyBuf)
-
-	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", nombre)
-
-	if err != nil {
-		fmt.Println("error writing to buffer")
-		return
-	}
-
-	// open file handle
-	fh, err := os.Open(ruta)
-	if err != nil {
-		fmt.Println("error opening file")
-		return
-	}
-	defer fh.Close()
-
-	//iocopy
-	_, err = io.Copy(fileWriter, fh)
-
-	contentType := bodyWriter.FormDataContentType()
-	bodyWriter.Close()
-
-	client.Post(baseURL+"/uploadDrive", contentType, bodyBuf)
-	*/
-	//	fmt.Printf("Error al subir el archivo: %v\n", rData.Msg)
 }
 
 func uploadFileT(file types.File) bool {

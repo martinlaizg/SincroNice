@@ -66,13 +66,6 @@ func uploadDriveHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	blocks[blockT.ID] = blockT
 
-	newPath := ruta + blockID
-	newBlock, err := os.Create(newPath)
-	defer newBlock.Close()
-	chk(err)
-	_, err = newBlock.Write(blockBytes)
-	newBlock.Sync()
-	chk(err)
 	r.Status = true
 	response(w, r)
 
@@ -101,15 +94,15 @@ func uploadDriveHandler(w http.ResponseWriter, req *http.Request) {
 		log.Fatalf("Unable to get token from file. %v", err)
 	}
 
-	id := "1SXfqr0Jm6iEe04W5BGvo2X57pYvatDjY"
-	DownloadFile(client, id)
+	//id := "1SXfqr0Jm6iEe04W5BGvo2X57pYvatDjY"
+	//DownloadFile(client, id)
 
-	fileBytes, err := ioutil.ReadFile(ruta + blockID)
+	/*fileBytes, err := ioutil.ReadFile(ruta + blockID)
 	if err != nil {
 		log.Fatalf("Unable to read file for upload: %v", err)
-	}
+	}*/
 
-	fileMIMEType := http.DetectContentType(fileBytes)
+	fileMIMEType := http.DetectContentType(blockBytes)
 
 	postURL := "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
 	authToken := token.AccessToken
@@ -124,7 +117,7 @@ func uploadDriveHandler(w http.ResponseWriter, req *http.Request) {
 		"} \n\n" +
 		"--" + boundary + "\n" +
 		"Content-Type:" + fileMIMEType + "\n\n" +
-		string(fileBytes) + "\n" +
+		string(blockBytes) + "\n" +
 
 		"--" + boundary + "--")
 
@@ -241,105 +234,6 @@ func randStr(strSize int, randType string) string {
 	return string(bytes)
 }
 
-/*
-func uploadDriveHandler(w http.ResponseWriter, req *http.Request) {
-
-	log.Println("File try upload")
-	fmt.Println("File try upload")
-	fil, handler, err := req.FormFile("uploadfile")
-	fileName := handler.Filename
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer fil.Close()
-
-	f, err := os.OpenFile(ruta+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer f.Close()
-	io.Copy(f, fil)
-
-	ctx := context.Background()
-	// process the credential file
-	credential, err := ioutil.ReadFile("client_secret.json")
-	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
-	}
-
-	config, err := google.ConfigFromJSON(credential, drive.DriveScope)
-	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
-	}
-
-	client := getClient(ctx, config)
-
-	cacheFile, err := tokenCacheFile()
-	if err != nil {
-		log.Fatalf("Unable to get path to cached credential file. %v", err)
-	}
-
-	token, err := tokenFromFile(cacheFile)
-	if err != nil {
-		log.Fatalf("Unable to get token from file. %v", err)
-	}
-
-	id := "1SXfqr0Jm6iEe04W5BGvo2X57pYvatDjY"
-	DownloadFile(client, id)
-
-	fileBytes, err := ioutil.ReadFile(ruta + fileName)
-	if err != nil {
-		log.Fatalf("Unable to read file for upload: %v", err)
-	}
-
-	fileMIMEType := http.DetectContentType(fileBytes)
-
-	postURL := "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
-	authToken := token.AccessToken
-
-	boundary := randStr(32, "alphanum")
-
-	uploadData := []byte("\n" +
-		"--" + boundary + "\n" +
-		"Content-Type: application/json; charset=" + string('"') + "UTF-8" + string('"') + "\n\n" +
-		"{ \n" +
-		string('"') + "name" + string('"') + ":" + string('"') + fileName + string('"') + "\n" +
-		"} \n\n" +
-		"--" + boundary + "\n" +
-		"Content-Type:" + fileMIMEType + "\n\n" +
-		string(fileBytes) + "\n" +
-
-		"--" + boundary + "--")
-
-	// post to Drive with RESTful method
-	request, _ := http.NewRequest("POST", postURL, strings.NewReader(string(uploadData)))
-	request.Header.Add("Host", "www.googleapis.com")
-	request.Header.Add("Authorization", "Bearer "+authToken)
-	request.Header.Add("Content-Type", "multipart/related; boundary="+string('"')+boundary+string('"'))
-	request.Header.Add("Content-Length", strconv.FormatInt(request.ContentLength, 10))
-
-	response, err := client.Do(request)
-	if err != nil {
-		log.Fatalf("Unable to be post to Google API: %v", err)
-		return
-	}
-
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-
-	if err != nil {
-		log.Fatalf("Unable to read Google API response: %v", err)
-		return
-	}
-
-	fmt.Println(string(body))
-
-	log.Println("File " + fileName + " upload successful")
-}
-*/
-// DownloadFile downloads the content of a given file object
 func DownloadFile(client *http.Client, id string) (string, error) {
 	// t parameter should use an oauth.Transport
 
@@ -370,12 +264,9 @@ func DownloadFile(client *http.Client, id string) (string, error) {
 	}
 
 	fmt.Printf(string(body))
-	fmt.Printf("///////////////////")
-
 	json, _ := jason.NewObjectFromBytes(body)
 	url, _ := json.GetString("webContentLink")
 	fmt.Println("url : ", url)
-	fmt.Printf("///////////////////")
 
 	//fileMIMEType := http.DetectContentType(fileBytes)
 
