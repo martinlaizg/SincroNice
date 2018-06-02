@@ -58,8 +58,9 @@ type File struct {
 
 // Version : versión
 type Version struct {
-	ID     string
-	Blocks []string
+	ID      string
+	Created string
+	Blocks  []string
 }
 
 // Block : tipo de bloque

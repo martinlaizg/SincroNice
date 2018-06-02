@@ -439,8 +439,9 @@ func uploadFile(w http.ResponseWriter, req *http.Request) {
 		log.Println("Creado nuevo fichero")
 	} else {
 		newVersion := types.Version{
-			ID:     newFile.Versions[0].ID,
-			Blocks: newFile.Versions[0].Blocks}
+			ID:      newFile.Versions[0].ID,
+			Created: time.Now().UTC().String(),
+			Blocks:  newFile.Versions[0].Blocks}
 		file.Versions = append(file.Versions, newVersion)
 		files[fileID] = file
 		log.Println("Añadida nueva versión al fichero ya existente")
@@ -479,7 +480,6 @@ func main() {
 	router.HandleFunc("/u/{id}/folders", createFolder)
 	router.HandleFunc("/u/{id}/folders/delete/{folderId}", deleteFolder)
 	router.HandleFunc("/u/{id}/files/{fileID}", deleteFile)
-	router.HandleFunc("/checkBlock", checkBlock)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 

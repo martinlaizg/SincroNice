@@ -18,6 +18,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/howeyc/gopass"
@@ -539,7 +540,8 @@ func uploadFile() bool {
 	const fileChunk = 1 * (1 << 20) // 1 MB
 	totalPartsNum := uint64(math.Ceil(float64(fileSize) / float64(fileChunk)))
 	version := types.Version{
-		ID: types.GenXid(),
+		ID:      types.GenXid(),
+		Created: time.Now().UTC().String(),
 	}
 	color.Yellow("Subiendo archivo...")
 	for i := uint64(0); i < totalPartsNum; i++ {
