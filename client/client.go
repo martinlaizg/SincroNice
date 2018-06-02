@@ -44,6 +44,7 @@ func send(endpoint string, data url.Values) *http.Response {
 	return r
 }
 
+<<<<<<< HEAD
 func subir() {
 
 	fmt.Printf("\nFichero:")
@@ -95,6 +96,8 @@ func subir() {
 
 }
 
+=======
+>>>>>>> df641f62d7ccb08e4fcf5e3e6adbd7daf8d37cdd
 func login() bool {
 	color.Set(color.FgHiYellow)
 	fmt.Print("\nLogin\n")

@@ -95,6 +95,7 @@ Shutdown server...
 2018/06/02 14:13:32 Servidor detenido correctamente
 2018/06/02 14:13:32 Saving data to JSON...
 2018/06/02 14:13:32 Data saved
+<<<<<<< HEAD
 2018/06/02 17:23:29 Running server...
 2018/06/02 17:23:29 Loading data from JSON...
 2018/06/02 17:23:29 Data loaded
@@ -159,3 +160,119 @@ Shutdown server...
 2018/06/02 19:09:28 Servidor detenido correctamente
 2018/06/02 19:09:28 Saving data to JSON...
 2018/06/02 19:09:28 Data saved
+=======
+2018/06/02 17:42:07 Running server...
+2018/06/02 17:42:07 Loading data from JSON...
+2018/06/02 17:42:07 Data loaded
+2018/06/02 17:42:07 Running server on port: 8081
+2018/06/02 17:42:43 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 17:44:21 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 17:45:07 http: panic serving [::1]:53564: open ./tmp/bc9bn0qu9uqhji6c5e3g: El sistema no puede encontrar la ruta especificada.
+goroutine 34 [running]:
+net/http.(*conn).serve.func1(0xc0421ca000)
+	C:/Go/src/net/http/server.go:1697 +0xd7
+panic(0x6dbf40, 0xc04216c000)
+	C:/Go/src/runtime/panic.go:491 +0x291
+main.chk(0x8a0920, 0xc04216c000)
+	C:/Users/pedro/go/src/SincroNice/server/server.go:30 +0x51
+main.uploadBlock(0x8a45e0, 0xc0421682a0, 0xc0421d4800)
+	C:/Users/pedro/go/src/SincroNice/server/server.go:262 +0x4d5
+net/http.HandlerFunc.ServeHTTP(0x751428, 0x8a45e0, 0xc0421682a0, 0xc0421d4800)
+	C:/Go/src/net/http/server.go:1918 +0x4b
+github.com/gorilla/mux.(*Router).ServeHTTP(0xc0420fc7e0, 0x8a45e0, 0xc0421682a0, 0xc0421d4800)
+	C:/Users/pedro/go/src/github.com/gorilla/mux/mux.go:162 +0xf4
+net/http.serverHandler.ServeHTTP(0xc04207edd0, 0x8a45e0, 0xc0421682a0, 0xc0421d4600)
+	C:/Go/src/net/http/server.go:2619 +0xbb
+net/http.(*conn).serve(0xc0421ca000, 0x8a4aa0, 0xc04204c680)
+	C:/Go/src/net/http/server.go:1801 +0x724
+created by net/http.(*Server).Serve
+	C:/Go/src/net/http/server.go:2720 +0x28f
+2018/06/02 17:52:57 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 17:53:41 http: panic serving [::1]:54409: open ./tmp/bc9br1au9uqhji6c5e4g: El sistema no puede encontrar la ruta especificada.
+goroutine 7 [running]:
+net/http.(*conn).serve.func1(0xc042048000)
+	C:/Go/src/net/http/server.go:1697 +0xd7
+panic(0x6dbf40, 0xc04208a8d0)
+	C:/Go/src/runtime/panic.go:491 +0x291
+main.chk(0x8a0920, 0xc04208a8d0)
+	C:/Users/pedro/go/src/SincroNice/server/server.go:30 +0x51
+main.uploadBlock(0x8a45e0, 0xc0420741c0, 0xc0421ac600)
+	C:/Users/pedro/go/src/SincroNice/server/server.go:262 +0x4d5
+net/http.HandlerFunc.ServeHTTP(0x751428, 0x8a45e0, 0xc0420741c0, 0xc0421ac600)
+	C:/Go/src/net/http/server.go:1918 +0x4b
+github.com/gorilla/mux.(*Router).ServeHTTP(0xc0420fc7e0, 0x8a45e0, 0xc0420741c0, 0xc0421ac600)
+	C:/Users/pedro/go/src/github.com/gorilla/mux/mux.go:162 +0xf4
+net/http.serverHandler.ServeHTTP(0xc04207edd0, 0x8a45e0, 0xc0420741c0, 0xc0421ac400)
+	C:/Go/src/net/http/server.go:2619 +0xbb
+net/http.(*conn).serve(0xc042048000, 0x8a4aa0, 0xc04216e200)
+	C:/Go/src/net/http/server.go:1801 +0x724
+created by net/http.(*Server).Serve
+	C:/Go/src/net/http/server.go:2720 +0x28f
+2018/06/02 18:08:21 
+
+Shutdown server...
+2018/06/02 18:08:21 Servidor detenido correctamente
+2018/06/02 18:08:21 Saving data to JSON...
+2018/06/02 18:08:21 Data saved
+2018/06/02 18:12:08 Running server...
+2018/06/02 18:12:08 Loading data from JSON...
+2018/06/02 18:12:08 Data loaded
+2018/06/02 18:12:08 Running server on port: 8081
+2018/06/02 18:20:36 
+
+Shutdown server...
+2018/06/02 18:20:36 Servidor detenido correctamente
+2018/06/02 18:20:36 Saving data to JSON...
+2018/06/02 18:20:36 Data saved
+2018/06/02 18:20:37 Running server...
+2018/06/02 18:20:37 Loading data from JSON...
+2018/06/02 18:20:37 Data loaded
+2018/06/02 18:20:37 Running server on port: 8081
+2018/06/02 18:20:50 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 18:25:18 
+
+Shutdown server...
+2018/06/02 18:25:18 Servidor detenido correctamente
+2018/06/02 18:25:18 Saving data to JSON...
+2018/06/02 18:25:18 Data saved
+2018/06/02 18:25:20 Running server...
+2018/06/02 18:25:20 Loading data from JSON...
+2018/06/02 18:25:20 Data loaded
+2018/06/02 18:25:20 Running server on port: 8081
+2018/06/02 18:25:33 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 18:26:24 Usuario bc98bahcite8musaehu0 intentó subir fichero
+2018/06/02 18:26:24 Creado nuevo fichero
+2018/06/02 18:26:24 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 18:27:23 
+
+Shutdown server...
+2018/06/02 18:27:23 Servidor detenido correctamente
+2018/06/02 18:27:23 Saving data to JSON...
+2018/06/02 18:27:23 Data saved
+2018/06/02 18:27:25 Running server...
+2018/06/02 18:27:25 Loading data from JSON...
+2018/06/02 18:27:25 Data loaded
+2018/06/02 18:27:25 Running server on port: 8081
+2018/06/02 18:32:19 
+
+Shutdown server...
+2018/06/02 18:32:19 Servidor detenido correctamente
+2018/06/02 18:32:19 Saving data to JSON...
+2018/06/02 18:32:19 Data saved
+2018/06/02 18:32:20 Running server...
+2018/06/02 18:32:20 Loading data from JSON...
+2018/06/02 18:32:20 Data loaded
+2018/06/02 18:32:20 Running server on port: 8081
+2018/06/02 18:32:29 Usuario bc98bahcite8musaehu0 intentó subir fichero
+2018/06/02 18:32:29 Añadida nueva versión al fichero ya existente
+2018/06/02 18:32:29 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 18:33:00 Usuario bc98bahcite8musaehu0 intentó subir fichero
+2018/06/02 18:33:00 Creado nuevo fichero
+2018/06/02 18:33:00 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 18:41:50 
+
+Shutdown server...
+2018/06/02 18:41:50 Servidor detenido correctamente
+2018/06/02 18:41:50 Saving data to JSON...
+2018/06/02 18:41:50 Data saved
+>>>>>>> df641f62d7ccb08e4fcf5e3e6adbd7daf8d37cdd
