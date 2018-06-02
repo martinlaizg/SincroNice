@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -38,6 +39,131 @@ func send(endpoint string, data url.Values) *http.Response {
 	r, err := client.PostForm(baseURL+endpoint, data)
 	chk(err)
 	return r
+}
+
+func subirDrive() bool {
+	fmt.Printf("\nRuta\n")
+	var ruta string
+	//	fmt.Scanln(&ruta)
+	ruta = "C:/prueba.ppt"
+	fmt.Printf("\nNombre del archivo\n")
+	var nombre string
+	fmt.Scanln(&nombre)
+	///////
+	file, err := os.Open(ruta)
+	chk(err)
+	defer file.Close()
+
+	fileInfo, _ := file.Stat()
+	var fileSize int64 = fileInfo.Size()
+	const fileChunk = 1 * (1 << 20) // 1 MB
+	totalPartsNum := uint64(math.Ceil(float64(fileSize) / float64(fileChunk)))
+	version := types.Version{
+		ID: types.GenXid(),
+	}
+
+	for i := uint64(0); i < totalPartsNum; i++ {
+		partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
+		partBuffer := make([]byte, partSize)
+
+		file.Read(partBuffer)
+
+		blockID := checkBlock(partBuffer)
+		version.Blocks = append(version.Blocks, blockID)
+	}
+	fileT := types.File{
+		FolderID: folder.ID,
+		Name:     nombre,
+		OwnerID:  usuario.ID,
+		Versions: append(make([]*types.Version, 0), &version),
+	}
+
+	return uploadFileT(fileT)
+	//////
+	/*bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+
+	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", nombre)
+
+	if err != nil {
+		fmt.Println("error writing to buffer")
+		return
+	}
+
+	// open file handle
+	fh, err := os.Open(ruta)
+	if err != nil {
+		fmt.Println("error opening file")
+		return
+	}
+	defer fh.Close()
+
+	//iocopy
+	_, err = io.Copy(fileWriter, fh)
+
+	contentType := bodyWriter.FormDataContentType()
+	bodyWriter.Close()
+
+	client.Post(baseURL+"/uploadDrive", contentType, bodyBuf)
+	*/
+	//	fmt.Printf("Error al subir el archivo: %v\n", rData.Msg)
+}
+
+func uploadFileT(file types.File) bool {
+	data := url.Values{}
+	fileB, err := json.Marshal(file)
+	chk(err)
+	data.Set("file", crypto.Encode64(fileB))
+
+	resp := send("/checkBlock", data)
+	bData, err := ioutil.ReadAll(resp.Body)
+	chk(err)
+	response := types.Response{}
+	err = json.Unmarshal(bData, &response)
+	chk(err)
+
+	return true
+}
+
+func checkBlock(buffer []byte) string {
+
+	hash := crypto.Hash(buffer)
+	hash64 := crypto.Encode64(hash[:])
+	data := url.Values{}
+	data.Set("hash", hash64)
+	resp := send("/checkBlock", data)
+	bData, err := ioutil.ReadAll(resp.Body)
+	chk(err)
+	response := types.Response{}
+	err = json.Unmarshal(bData, &response)
+	chk(err)
+	blockID := response.Msg
+
+	if !response.Status {
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile("fileupload", blockID)
+		chk(err)
+		_, err = io.Copy(part, bytes.NewReader(buffer))
+		chk(err)
+		_ = writer.WriteField("userID", crypto.Encode64([]byte("Luis")))
+		_ = writer.WriteField("folderID", crypto.Encode64([]byte("")))
+		_ = writer.WriteField("blockID", crypto.Encode64([]byte(blockID)))
+		err = writer.Close()
+		chk(err)
+		req, err := http.NewRequest("POST", baseURL+"/uploadDrive", body)
+		chk(err)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		resp, err := client.Do(req)
+		chk(err)
+		bData, err := ioutil.ReadAll(resp.Body)
+		chk(err)
+		response := types.Response{}
+		err = json.Unmarshal(bData, &response)
+		chk(err)
+
+	}
+	return blockID
 }
 
 func subir() {
@@ -320,6 +446,8 @@ func main() {
 			registry()
 		case "3":
 			subir()
+		case "4":
+			subirDrive()
 		case "q":
 			fmt.Println("Adios")
 		default:
