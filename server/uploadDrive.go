@@ -24,7 +24,6 @@ import (
 )
 
 //Ruta donde guardamos los archivos en el servidor
-var ruta = "C:/Users/pedro/go/src/SincroNice/server/tmp/"
 
 func checkBlockHandler(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
@@ -52,7 +51,6 @@ func uploadDriveHandler(w http.ResponseWriter, req *http.Request) {
 	block, _, err := req.FormFile("fileupload") // Obtenemos el fichero
 	defer block.Close()
 	chk(err)
-	fmt.Printf(blockID + "/" + userID)
 
 	blockBytes, err := ioutil.ReadAll(block) // Lo pasamos a bytes
 	chk(err)
@@ -135,17 +133,16 @@ func uploadDriveHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	//body, err := ioutil.ReadAll(response.Body)
 
-	if err != nil {
+	/*if err != nil {
 		log.Fatalf("Unable to read Google API response: %v", err)
 		return
-	}
+	}*/
 
-	fmt.Println(string(body))
+	//	fmt.Println(string(body))
 
 	log.Println("File " + blockID + " upload successful")
-
 }
 
 func getClient(ctx context.Context, config *oauth2.Config) *http.Client {

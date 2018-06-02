@@ -36,28 +36,29 @@ type User struct {
 
 // Folder : tipo de carpeta
 type Folder struct {
-	ID      string
-	UserID  string
-	Name    string
-	Path    string
-	Created string
-	Updated string
-	Folders map[string]string
-	Files   map[string]string
+	ID           string
+	UserID       string
+	Name         string
+	Path         string
+	Created      string
+	Updated      string
+	FolderParent string
+	Folders      map[string]string
+	Files        map[string]string
 }
 
 // File : tipo de fichero
 type File struct {
+	ID       string
 	Name     string
 	FolderID string
 	OwnerID  string
-	Versions []*Version
+	Versions []Version
 }
 
 // Version : versión
 type Version struct {
 	ID     string
-	Name   string
 	Blocks []string
 }
 
