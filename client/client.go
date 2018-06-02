@@ -44,57 +44,6 @@ func send(endpoint string, data url.Values) *http.Response {
 	return r
 }
 
-func subir() {
-
-	fmt.Printf("\nFichero:")
-	var ruta string
-	fmt.Scanln(&ruta)
-
-	//parts := make(map[string]byte[])
-
-	carpetas := strings.Split(ruta, "/")
-	nombre := carpetas[len(carpetas)-1]
-
-	bodyBuf := &bytes.Buffer{}
-	bodyWriter := multipart.NewWriter(bodyBuf)
-
-	// this step is very important
-	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", nombre)
-	if err != nil {
-		fmt.Println("error writing to buffer")
-	}
-
-	// open file handle
-	fh, err := os.Open(ruta)
-	if err != nil {
-		fmt.Println("error opening file")
-	}
-	defer fh.Close()
-
-	//iocopy
-	_, err = io.Copy(fileWriter, fh)
-	if err != nil {
-	}
-
-	contentType := bodyWriter.FormDataContentType()
-	bodyWriter.Close()
-
-	response, err := client.Post(baseURL+"/upload", contentType, bodyBuf)
-
-	bData, err := ioutil.ReadAll(response.Body)
-	chk(err)
-	var rData types.Response
-	err = json.Unmarshal(bData, &rData)
-	chk(err)
-
-	if rData.Status == true {
-		fmt.Printf("Subido correctamente\n")
-		return
-	}
-	fmt.Printf("Error al subir el archivo: %v\n", rData.Msg)
-
-}
-
 func login() bool {
 	fmt.Print("\nLogin\n")
 	fmt.Print("Email: ")
