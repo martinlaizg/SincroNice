@@ -84,14 +84,15 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 	userID := types.GenXid()
 	folderID := types.GenXid()
 	folder := types.Folder{
-		ID:      folderID,
-		UserID:  userID,
-		Name:    "my-unit",
-		Path:    "/",
-		Created: time.Now().UTC().String(),
-		Updated: time.Now().UTC().String(),
-		Folders: make(map[string]string),
-		Files:   make(map[string]string)}
+		ID:           folderID,
+		UserID:       userID,
+		Name:         "my-unit",
+		Path:         "/",
+		Created:      time.Now().UTC().String(),
+		Updated:      time.Now().UTC().String(),
+		FolderParent: "",
+		Folders:      make(map[string]string),
+		Files:        make(map[string]string)}
 	folders[folderID] = folder
 	user := types.User{
 		ID:         userID,
@@ -148,11 +149,19 @@ func checkTokenHandler(w http.ResponseWriter, req *http.Request) {
 
 	if chkToken(token, id) {
 		log.Printf("Token del usuario %s verificado correctamente", email)
+		user := users[id]
+		r.ID = user.ID
+		r.Email = user.Email
+		r.Name = user.Name
+		r.Token = user.Token
+		r.MainFolder = user.MainFolder
+
 		r.Status = true
 		r.Msg = "Token correcto"
 
 	} else {
 		log.Printf("Token del usuario %s incorrecto", email)
+		r.User = types.User{}
 		r.Status = false
 		r.Msg = "Token incorrecto"
 	}
