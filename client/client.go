@@ -305,15 +305,21 @@ func loggedMenu() {
 	}
 }
 
+/**
+Solicita el fichero que quiere subir el usuario
+Trocea el fichero en bloques de 1MB
+Y genera el fichero para el servidor
+*/
 func uploadFile() bool {
 	fmt.Printf("Indique el fichero: ")
-	path := "/home/martinlaizg/Desktop/fichero.txt"
-	// fmt.Scanf("%s\n", &path)
+
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	path := scanner.Text()
+	path = strings.Replace(path, "\\", "", -1)
 	tokens := strings.Split(path, "/")
 	fileName := tokens[len(tokens)-1]
-
-	fmt.Println(fileName)
-
+	fmt.Println()
 	file, err := os.Open(path)
 	chk(err)
 	defer file.Close()
@@ -324,39 +330,55 @@ func uploadFile() bool {
 	version := types.Version{
 		ID: types.GenXid(),
 	}
+	fmt.Println("Subiendo archivo...")
 	for i := uint64(0); i < totalPartsNum; i++ {
 		partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
 		partBuffer := make([]byte, partSize)
-
 		file.Read(partBuffer)
 
-		blockID := checkBlock(partBuffer)
+		blockID := checkBlock(partBuffer) // Obtiene el id del bloque en el servidor
 		version.Blocks = append(version.Blocks, blockID)
 	}
 	fileT := types.File{
 		FolderID: folder.ID,
 		Name:     fileName,
 		OwnerID:  usuario.ID,
-		Versions: append(make([]*types.Version, 0), &version),
+		Versions: append(make([]types.Version, 0), version),
 	}
 	return uploadFileT(fileT)
 }
 
+/**
+Sube el tipo fichero al servidor
+*/
 func uploadFileT(file types.File) bool {
 	data := url.Values{}
 	fileB, err := json.Marshal(file)
 	chk(err)
 	data.Set("file", crypto.Encode64(fileB))
+	data.Set("user", crypto.Encode64([]byte(usuario.ID)))
+	data.Set("folder", crypto.Encode64([]byte(folder.ID)))
+	data.Set("token", crypto.Encode64([]byte(usuario.Token)))
 
-	resp := send("/checkBlock", data)
+	resp := send("/u/"+usuario.ID+"/folders/"+folder.ID+"/upload", data)
 	bData, err := ioutil.ReadAll(resp.Body)
 	chk(err)
 	response := types.Response{}
 	err = json.Unmarshal(bData, &response)
 	chk(err)
-
+	if !response.Status {
+		fmt.Println("Error: " + response.Msg)
+		return false
+	}
+	fmt.Println("Archivo subido con éxito")
 	return true
 }
+
+/**
+Comprueba si existe el bloque en el seridor enviando el hash
+Si no existe lo manda
+Devuelve el identificador del bloque
+*/
 
 func checkBlock(buffer []byte) string {
 	hash := crypto.Hash(buffer)
@@ -372,7 +394,6 @@ func checkBlock(buffer []byte) string {
 	blockID := response.Msg
 
 	if !response.Status {
-		fmt.Println("El bloque no existe en el servidor")
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
 		part, err := writer.CreateFormFile("fileupload", blockID)
@@ -395,9 +416,6 @@ func checkBlock(buffer []byte) string {
 		err = json.Unmarshal(bData, &response)
 		chk(err)
 
-		fmt.Println(response)
-	} else {
-		fmt.Println("Ya existe el bloque en el servidor")
 	}
 	return blockID
 }

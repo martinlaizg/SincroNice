@@ -31,7 +31,7 @@ func chk(e error) {
 }
 
 const maxUploadSize = 2 * 1024 // 2 MB
-const uploadPath = "/home/martinlaizg/go/src/SincroNice/server/tmp/"
+const uploadPath = "./tmp/"
 
 // response : recibe un objeto de un struct para responder al cliente
 func response(w io.Writer, m interface{}) {
@@ -115,11 +115,15 @@ func checkBlock(w http.ResponseWriter, req *http.Request) {
 	response(w, r)
 }
 
+/**
+Inserta el bloque en la base de datos y lo almacena en el sistema
+*/
 func uploadBlock(w http.ResponseWriter, req *http.Request) {
 	req.ParseMultipartForm(1)
 	r := types.Response{}
 	w.Header().Set("Content-Type", "application/json")
-	blockID := req.PostFormValue("blockID")
+	blockID := string(crypto.Decode64(req.PostFormValue("blockID")))
+	userID := string(crypto.Decode64(req.PostFormValue("userID")))
 	block, _, err := req.FormFile("fileupload") // Obtenemos el fichero
 	defer block.Close()
 	chk(err)
@@ -127,8 +131,9 @@ func uploadBlock(w http.ResponseWriter, req *http.Request) {
 	chk(err)
 	hash := crypto.Hash(blockBytes)
 	blockT := types.Block{
-		ID:   blockID,
-		Hash: hash[:]}
+		ID:    blockID,
+		Hash:  hash[:],
+		Owner: userID}
 	blocks[blockT.ID] = blockT
 	newPath := uploadPath + blockID
 	newBlock, err := os.Create(newPath)
@@ -141,15 +146,58 @@ func uploadBlock(w http.ResponseWriter, req *http.Request) {
 	response(w, r)
 }
 
+/**
+Inserta el tipo de fichero en la base de datos
+*/
 func uploadFile(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	r := types.Response{}
-	r.Status = true
-	r.Msg = "Fichero subido correctamente"
-
-	usuarioID := req.Form.Get("")
-
 	w.Header().Set("Content-Type", "application/json")
+	newFile := types.File{}
+	userID := string(crypto.Decode64(req.Form.Get("user")))
+	folderID := string(crypto.Decode64(req.Form.Get("folder")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
+	log.Println("Usuario " + userID + " intentó subir fichero")
+	if !chkToken(token, userID) { // Verificamos la validez del usuario
+		r.Status = false
+		r.Msg = "No está bien autenticado"
+		response(w, r)
+		log.Println("Token de usuario no verificado")
+		return
+	}
+	err := json.Unmarshal(crypto.Decode64(req.Form.Get("file")), &newFile)
+	chk(err)
+	folder, exist := folders[folderID]
+	if !exist || folder.UserID != userID || newFile.OwnerID != userID { // Carpeta incorrecta
+		r.Status = false
+		r.Msg = "Carpeta incorrecta"
+		response(w, r)
+		return
+	}
+	r.Status = true
+	r.Msg = "Subido correctamente"
+
+	fileID := ""
+	for id, file := range folder.Files {
+		if file == newFile.Name {
+			fileID = id
+		}
+	}
+	file, exist := files[fileID]
+	if !exist {
+		newFile.ID = types.GenXid()
+		files[newFile.ID] = newFile
+		folders[folderID].Files[newFile.ID] = newFile.Name
+		log.Println("Creado nuevo fichero")
+	} else {
+		newVersion := types.Version{
+			ID:     newFile.Versions[0].ID,
+			Blocks: newFile.Versions[0].Blocks}
+		file.Versions = append(file.Versions, newVersion)
+		files[fileID] = file
+		log.Println("Añadida nueva versión al fichero ya existente")
+	}
+
 	response(w, r)
 }
 
@@ -157,8 +205,6 @@ func uploadFile(w http.ResponseWriter, req *http.Request) {
 func main() {
 	loadData()
 	defer saveData()
-
-	//fs := http.FileServer(http.Dir(uploadPath))
 
 	log.Println("Running server on port: " + port)
 	// suscripción SIGINT
