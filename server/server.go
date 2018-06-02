@@ -3,6 +3,7 @@ package main
 import (
 	"SincroNice/crypto"
 	"SincroNice/types"
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -10,11 +11,19 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"os/user"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	drive "google.golang.org/api/drive/v2"
 )
 
 var (
@@ -256,13 +265,83 @@ func uploadBlock(w http.ResponseWriter, req *http.Request) {
 		Hash:  hash[:],
 		Owner: userID}
 	blocks[blockT.ID] = blockT
-	newPath := uploadPath + blockID
-	newBlock, err := os.Create(newPath)
-	defer newBlock.Close()
-	chk(err)
-	_, err = newBlock.Write(blockBytes)
-	newBlock.Sync()
-	chk(err)
+
+	//newPath := uploadPath + blockID
+	//newBlock, err := os.Create(newPath)
+	//defer newBlock.Close()
+	//chk(err)
+	//_, err = newBlock.Write(blockBytes)
+	//newBlock.Sync()
+	//chk(err)
+
+	//Subimos al drive
+	ctx := context.Background()
+	// process the credential file
+	credential, err := ioutil.ReadFile("client_secret.json")
+	if err != nil {
+		log.Fatalf("Unable to read client secret file: %v", err)
+	}
+
+	config, err := google.ConfigFromJSON(credential, drive.DriveScope)
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+	}
+
+	client := getClient(ctx, config)
+
+	cacheFile, err := tokenCacheFile()
+	if err != nil {
+		log.Fatalf("Unable to get path to cached credential file. %v", err)
+	}
+
+	token, err := tokenFromFile(cacheFile)
+	if err != nil {
+		log.Fatalf("Unable to get token from file. %v", err)
+	}
+
+	fileMIMEType := http.DetectContentType(blockBytes)
+
+	postURL := "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
+	authToken := token.AccessToken
+
+	boundary := randStr(32, "alphanum")
+
+	uploadData := []byte("\n" +
+		"--" + boundary + "\n" +
+		"Content-Type: application/json; charset=" + string('"') + "UTF-8" + string('"') + "\n\n" +
+		"{ \n" +
+		string('"') + "name" + string('"') + ":" + string('"') + blockID + string('"') + "\n" +
+		"} \n\n" +
+		"--" + boundary + "\n" +
+		"Content-Type:" + fileMIMEType + "\n\n" +
+		string(blockBytes) + "\n" +
+
+		"--" + boundary + "--")
+
+	// post to Drive with RESTful method
+	request, _ := http.NewRequest("POST", postURL, strings.NewReader(string(uploadData)))
+	request.Header.Add("Host", "www.googleapis.com")
+	request.Header.Add("Authorization", "Bearer "+authToken)
+	request.Header.Add("Content-Type", "multipart/related; boundary="+string('"')+boundary+string('"'))
+	request.Header.Add("Content-Length", strconv.FormatInt(request.ContentLength, 10))
+
+	response2, err := client.Do(request)
+
+	body, err := ioutil.ReadAll(response2.Body)
+	if err != nil {
+		fmt.Printf("An error occurred: %v\n", err)
+	}
+
+	fmt.Printf(string(body))
+
+	if err != nil {
+		log.Fatalf("Unable to be post to Google API: %v", err)
+		r.Status = false
+		response(w, r)
+		return
+	}
+	defer response2.Body.Close()
+
 	r.Status = true
 	response(w, r)
 }
@@ -351,6 +430,7 @@ func main() {
 	router.HandleFunc("/u/{id}/folders/{folderId}/upload", uploadFile)
 	router.HandleFunc("/u/{id}/folders", createFolder)
 	router.HandleFunc("/u/{id}/folders/delete/{folderId}", deleteFolder)
+	router.HandleFunc("/checkBlock", checkBlock)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 
@@ -413,8 +493,6 @@ func saveData() {
 	log.Println("Data saved")
 }
 
-//https://astaxie.gitbooks.io/build-web-application-with-golang/en/04.5.html
-
 func renderError(w http.ResponseWriter, message string, statusCode int) {
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte(message))
@@ -424,4 +502,194 @@ func randToken(len int) string {
 	b := make([]byte, len)
 	rand.Read(b)
 	return fmt.Sprintf("%x", b)
+}
+
+func uploadDriveHandler(w http.ResponseWriter, req *http.Request) {
+
+	req.ParseMultipartForm(1)
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+	blockID := string(crypto.Decode64(req.PostFormValue("blockID")))
+	userID := string(crypto.Decode64(req.PostFormValue("userID")))
+	block, _, err := req.FormFile("fileupload") // Obtenemos el fichero
+	defer block.Close()
+	chk(err)
+
+	blockBytes, err := ioutil.ReadAll(block) // Lo pasamos a bytes
+	chk(err)
+
+	hash := crypto.Hash(blockBytes)
+
+	blockT := types.Block{
+		ID:    blockID,
+		Hash:  hash[:],
+		Owner: userID,
+	}
+	blocks[blockT.ID] = blockT
+
+	r.Status = true
+	response(w, r)
+
+	//upload drive
+	ctx := context.Background()
+	// process the credential file
+	credential, err := ioutil.ReadFile("client_secret.json")
+	if err != nil {
+		log.Fatalf("Unable to read client secret file: %v", err)
+	}
+
+	config, err := google.ConfigFromJSON(credential, drive.DriveScope)
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+	}
+
+	client := getClient(ctx, config)
+
+	cacheFile, err := tokenCacheFile()
+	if err != nil {
+		log.Fatalf("Unable to get path to cached credential file. %v", err)
+	}
+
+	token, err := tokenFromFile(cacheFile)
+	if err != nil {
+		log.Fatalf("Unable to get token from file. %v", err)
+	}
+
+	//id := "1SXfqr0Jm6iEe04W5BGvo2X57pYvatDjY"
+	//DownloadFile(client, id)
+
+	/*fileBytes, err := ioutil.ReadFile(ruta + blockID)
+	if err != nil {
+		log.Fatalf("Unable to read file for upload: %v", err)
+	}*/
+
+	fileMIMEType := http.DetectContentType(blockBytes)
+
+	postURL := "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
+	authToken := token.AccessToken
+
+	boundary := randStr(32, "alphanum")
+
+	uploadData := []byte("\n" +
+		"--" + boundary + "\n" +
+		"Content-Type: application/json; charset=" + string('"') + "UTF-8" + string('"') + "\n\n" +
+		"{ \n" +
+		string('"') + "name" + string('"') + ":" + string('"') + blockID + string('"') + "\n" +
+		"} \n\n" +
+		"--" + boundary + "\n" +
+		"Content-Type:" + fileMIMEType + "\n\n" +
+		string(blockBytes) + "\n" +
+
+		"--" + boundary + "--")
+
+	// post to Drive with RESTful method
+	request, _ := http.NewRequest("POST", postURL, strings.NewReader(string(uploadData)))
+	request.Header.Add("Host", "www.googleapis.com")
+	request.Header.Add("Authorization", "Bearer "+authToken)
+	request.Header.Add("Content-Type", "multipart/related; boundary="+string('"')+boundary+string('"'))
+	request.Header.Add("Content-Length", strconv.FormatInt(request.ContentLength, 10))
+
+	response, err := client.Do(request)
+	if err != nil {
+		log.Fatalf("Unable to be post to Google API: %v", err)
+		return
+	}
+
+	defer response.Body.Close()
+	//body, err := ioutil.ReadAll(response.Body)
+
+	/*if err != nil {
+		log.Fatalf("Unable to read Google API response: %v", err)
+		return
+	}*/
+
+	//	fmt.Println(string(body))
+
+	log.Println("File " + blockID + " upload successful")
+}
+
+func getClient(ctx context.Context, config *oauth2.Config) *http.Client {
+	cacheFile, err := tokenCacheFile()
+	if err != nil {
+		log.Fatalf("Unable to get path to cached credential file. %v", err)
+	}
+	tok, err := tokenFromFile(cacheFile)
+	if err != nil {
+		tok = getTokenFromWeb(config)
+		saveToken(cacheFile, tok)
+	}
+	return config.Client(ctx, tok)
+}
+
+func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
+	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+	fmt.Printf("Go to the following link in your browser then type the "+
+		"authorization code: \n%v\n", authURL)
+
+	var code string
+	if _, err := fmt.Scan(&code); err != nil {
+		log.Fatalf("Unable to read authorization code %v", err)
+	}
+
+	tok, err := config.Exchange(oauth2.NoContext, code)
+	if err != nil {
+		log.Fatalf("Unable to retrieve token from web %v", err)
+	}
+	return tok
+}
+
+func tokenCacheFile() (string, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	tokenCacheDir := filepath.Join(usr.HomeDir, ".credentials")
+	os.MkdirAll(tokenCacheDir, 0700)
+	return filepath.Join(tokenCacheDir,
+		url.QueryEscape("google-drive-golang.json")), err
+}
+
+func tokenFromFile(file string) (*oauth2.Token, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	t := &oauth2.Token{}
+	err = json.NewDecoder(f).Decode(t)
+	defer f.Close()
+	return t, err
+}
+
+func saveToken(file string, token *oauth2.Token) {
+	fmt.Printf("Saving credential file to: %s\n", file)
+	f, err := os.Create(file)
+	if err != nil {
+		log.Fatalf("Unable to cache oauth token: %v", err)
+	}
+	defer f.Close()
+	json.NewEncoder(f).Encode(token)
+}
+
+func randStr(strSize int, randType string) string {
+
+	var dictionary string
+
+	if randType == "alphanum" {
+		dictionary = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	}
+
+	if randType == "alpha" {
+		dictionary = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	}
+
+	if randType == "number" {
+		dictionary = "0123456789"
+	}
+
+	var bytes = make([]byte, strSize)
+	rand.Read(bytes)
+	for k, v := range bytes {
+		bytes[k] = dictionary[v%byte(len(dictionary))]
+	}
+	return string(bytes)
 }
