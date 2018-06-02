@@ -1,0 +1,97 @@
+2018/06/02 13:54:47 Running server...
+2018/06/02 13:54:47 Loading data from JSON...
+2018/06/02 13:54:47 Data loaded
+2018/06/02 13:54:47 Running server on port: 8081
+2018/06/02 13:55:22 User rmm118@gcloud.ua.es registry successful
+2018/06/02 13:55:29 Intento de acceso como rmm118@gcloud.ua.es, usuario y contraseña correcta, esperando verificación
+2018/06/02 13:55:50 Token del usuario rmm118@gcloud.ua.es verificado correctamente
+2018/06/02 13:55:52 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 13:59:23 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 13:59:28 The user rmm118@gcloud.ua.es has correctly created the folder SDS
+2018/06/02 13:59:28 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 13:59:30 The user rmm118@gcloud.ua.es has correctly created the folder MADS
+2018/06/02 13:59:30 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 13:59:33 The user rmm118@gcloud.ua.es has correctly created the folder MTIS
+2018/06/02 13:59:33 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 13:59:35 The user rmm118@gcloud.ua.es has correctly created the folder ADI
+2018/06/02 13:59:35 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 13:59:51 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 13:59:59 The user rmm118@gcloud.ua.es has correctly created the folder Teoría
+2018/06/02 13:59:59 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:02 The user rmm118@gcloud.ua.es has correctly created the folder Práctica
+2018/06/02 14:00:02 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:03 The user rmm118@gcloud.ua.es has correctly accessed the folder Teoría
+2018/06/02 14:00:06 The user rmm118@gcloud.ua.es has correctly created the folder Tema 1
+2018/06/02 14:00:06 The user rmm118@gcloud.ua.es has correctly accessed the folder Teoría
+2018/06/02 14:00:07 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:09 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:00:09 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:10 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:00:11 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:11 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:00:12 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:12 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:00:13 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:13 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:00:13 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:14 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:00:14 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:14 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:00:15 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:16 The user rmm118@gcloud.ua.es has correctly accessed the folder Teoría
+2018/06/02 14:00:16 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 14:00:18 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:19 The user rmm118@gcloud.ua.es has correctly accessed the folder Teoría
+2018/06/02 14:00:19 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:00:20 The user rmm118@gcloud.ua.es has correctly accessed the folder Teoría
+2018/06/02 14:00:20 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 14:00:30 
+
+Shutdown server...
+2018/06/02 14:00:30 Servidor detenido correctamente
+2018/06/02 14:00:30 Saving data to JSON...
+2018/06/02 14:00:30 Data saved
+2018/06/02 14:12:50 Running server...
+2018/06/02 14:12:50 Loading data from JSON...
+2018/06/02 14:12:50 Data loaded
+2018/06/02 14:12:50 Running server on port: 8081
+2018/06/02 14:12:54 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 14:12:55 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:12:56 The user rmm118@gcloud.ua.es has correctly accessed the folder Teoría
+2018/06/02 14:12:56 The user rmm118@gcloud.ua.es has correctly accessed the folder Tema 1
+2018/06/02 14:12:57 The user rmm118@gcloud.ua.es has correctly accessed the folder Teoría
+2018/06/02 14:12:58 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:12:59 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:00 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:00 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:01 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:01 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:02 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:02 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:02 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:02 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:03 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:03 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:03 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:03 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:04 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:04 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:04 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:05 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:05 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:05 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:16 The user rmm118@gcloud.ua.es has correctly created the folder Práctica 1
+2018/06/02 14:13:16 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:19 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:21 The user rmm118@gcloud.ua.es has correctly accessed the folder Práctica
+2018/06/02 14:13:22 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:24 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 14:13:25 The user rmm118@gcloud.ua.es has correctly accessed the folder SDS
+2018/06/02 14:13:26 The user rmm118@gcloud.ua.es has correctly deleted the folder SDS
+2018/06/02 14:13:26 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/02 14:13:32 
+
+Shutdown server...
+2018/06/02 14:13:32 Servidor detenido correctamente
+2018/06/02 14:13:32 Saving data to JSON...
+2018/06/02 14:13:32 Data saved
