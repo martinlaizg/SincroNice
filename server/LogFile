@@ -19,3 +19,46 @@ Shutdown server...
 2018/06/02 19:30:37 Data loaded
 2018/06/02 19:30:37 Running server on port: 8081
 2018/06/02 19:30:41 Fail access to main folder of user rmm118@gcloud.ua.es
+2018/06/02 20:53:46 Running server...
+2018/06/02 20:53:46 Loading data from JSON...
+2018/06/02 20:53:46 Data loaded
+2018/06/02 20:53:46 Running server on port: 8081
+2018/06/02 20:53:58 Fail access to user 
+2018/06/02 20:55:10 
+
+Shutdown server...
+2018/06/02 20:55:10 Servidor detenido correctamente
+2018/06/02 20:55:10 Saving data to JSON...
+2018/06/02 20:55:10 Data saved
+2018/06/02 20:55:24 Running server...
+2018/06/02 20:55:24 Loading data from JSON...
+2018/06/02 20:55:24 Data loaded
+2018/06/02 20:55:24 Running server on port: 8081
+2018/06/02 20:55:57 
+
+Shutdown server...
+2018/06/02 20:55:57 Servidor detenido correctamente
+2018/06/02 20:55:57 Saving data to JSON...
+2018/06/02 20:55:57 Data saved
+2018/06/02 20:56:07 Running server...
+2018/06/02 20:56:07 Loading data from JSON...
+2018/06/02 20:56:07 Data loaded
+2018/06/02 20:56:07 Running server on port: 8081
+2018/06/02 20:56:32 User harak94@gmail.com registry successful
+2018/06/02 20:56:45 Intento de acceso como harak94@gmail.com, usuario y contraseña correcta, esperando verificación
+2018/06/02 20:57:23 Token del usuario harak94@gmail.com verificado correctamente
+2018/06/02 20:57:26 The user harak94@gmail.com has correctly accessed the folder my-unit
+2018/06/02 20:57:32 The user harak94@gmail.com has correctly created the folder Pedro
+2018/06/02 20:57:32 The user harak94@gmail.com has correctly accessed the folder my-unit
+2018/06/02 20:57:52 The user harak94@gmail.com has correctly accessed the folder Pedro
+2018/06/02 20:58:01 The user harak94@gmail.com has correctly accessed the folder Pedro
+2018/06/02 20:58:11 The user harak94@gmail.com has correctly accessed the folder Pedro
+2018/06/02 20:58:18 Usuario bc9ego2u9uqj8v1voim0 intentó subir fichero
+2018/06/02 20:58:18 Creado nuevo fichero
+2018/06/02 20:58:18 The user harak94@gmail.com has correctly accessed the folder Pedro
+2018/06/02 20:59:16 
+
+Shutdown server...
+2018/06/02 20:59:16 Servidor detenido correctamente
+2018/06/02 20:59:16 Saving data to JSON...
+2018/06/02 20:59:16 Data saved

@@ -421,9 +421,11 @@ func uploadFile() bool {
 	path = strings.Replace(path, "\\", "", -1)
 	tokens := strings.Split(path, "/")
 	fileName := tokens[len(tokens)-1]
-	fmt.Println()
 	file, err := os.Open(path)
-	chk(err)
+	if err != nil {
+		fmt.Println("No se pudo abrir el archivo " + path)
+		return false
+	}
 	defer file.Close()
 	fileInfo, _ := file.Stat()
 	var fileSize int64 = fileInfo.Size()
