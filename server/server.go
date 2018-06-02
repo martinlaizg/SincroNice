@@ -324,10 +324,18 @@ func uploadFile(w http.ResponseWriter, req *http.Request) {
 
 // RunServer : run sincronice server
 func main() {
+	log.Printf("Servidor a la espera de peticiones.")
+	f, err := os.OpenFile("LogFile", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+	log.Printf("Running server...")
 	loadData()
 	defer saveData()
 
-	log.Println("Running server on port: " + port)
+	log.Printf("Running server on port: " + port)
 	// suscripción SIGINT
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
@@ -354,7 +362,7 @@ func main() {
 	}()
 
 	<-stopChan // espera señal SIGINT
-	log.Println("\n\nShutdown server...")
+	log.Printf("\n\nShutdown server...")
 
 	// apagar servidor de forma segura
 	// ctx, fnc := context.WithTimeout(context.Background(), 5*time.Second)
