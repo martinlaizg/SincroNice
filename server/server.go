@@ -403,8 +403,9 @@ func uploadFile(w http.ResponseWriter, req *http.Request) {
 
 // RunServer : run sincronice server
 func main() {
+	currentTime := time.Now()
 	log.Printf("Servidor a la espera de peticiones.")
-	f, err := os.OpenFile("LogFile", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	f, err := os.OpenFile(currentTime.Format("2006-01-02 15:04:05"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
