@@ -533,10 +533,11 @@ func downloadFile(w http.ResponseWriter, req *http.Request) {
 				if file.OwnerID == user.ID {
 					for _, value := range file.Versions {
 						if value.ID == versionID {
-							r.Status = true
-							r.Msg = "Hemos encontrado el archivo"
-							json.NewEncoder(w).Encode(value)
-							log.Printf("The user %s has correctly download the file %s", user.Email, file.Name)
+
+							storeTMP("")
+							/*
+
+							 */
 						}
 					}
 				} else {
@@ -552,14 +553,14 @@ func downloadFile(w http.ResponseWriter, req *http.Request) {
 
 // RunServer : run sincronice server
 func main() {
-	currentTime := time.Now()
+	/*currentTime := time.Now()
 	log.Printf("Servidor a la espera de peticiones.")
 	f, err := os.OpenFile(currentTime.Format("2006-01-02 15:04:05"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
-	log.SetOutput(f)
+	log.SetOutput(f)*/
 	log.Printf("Running server...")
 	loadData()
 	defer saveData()
@@ -844,4 +845,112 @@ func randStr(strSize int, randType string) string {
 		bytes[k] = dictionary[v%byte(len(dictionary))]
 	}
 	return string(bytes)
+}
+
+// guarda un bloque en la carpeta tmp
+func storeTMP(id string) {
+
+	ctx := context.Background()
+	// process the credential file
+	credential, err := ioutil.ReadFile("client_secret.json")
+	if err != nil {
+		log.Fatalf("Unable to read client secret file: %v", err)
+		return
+	}
+
+	config, err := google.ConfigFromJSON(credential, drive.DriveMetadataReadonlyScope)
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+		return
+	}
+
+	client := getClient(ctx, config)
+	if err != nil {
+		log.Fatalf("Unable to retrieve Drive client: %v", err)
+		return
+	}
+
+	cacheFile, err := tokenCacheFile()
+	if err != nil {
+		log.Fatalf("Unable to get path to cached credential file. %v", err)
+	}
+
+	token, err := tokenFromFile(cacheFile)
+	if err != nil {
+		log.Fatalf("Unable to get token from file. %v", err)
+	}
+	//1BsGS9imj5vzni9cjHpo8JBJP30HJ-wi_
+	downloadURL := "https://www.googleapis.com/drive/v2/files/1BsGS9imj5vzni9cjHpo8JBJP30HJ-wi_"
+	authToken := token.AccessToken
+	boundary := randStr(32, "alphanum")
+
+	/*uploadData := []byte("\n" +
+	"--" + boundary + "\n" +
+	"Content-Type: application/json; charset=" + string('"') + "UTF-8" + string('"') + "\n\n" +
+	"--" + boundary + "\n" +
+	"Content-Type:" + "jpg" + "\n\n" +
+	"--" + boundary + "--")*/
+	// post to Drive with RESTful method
+	request, _ := http.NewRequest("GET", downloadURL, nil)
+	request.Header.Add("Host", "www.googleapis.com")
+	request.Header.Add("Authorization", "Bearer "+authToken)
+	request.Header.Add("Content-Type", "multipart/related; boundary="+string('"')+boundary+string('"'))
+	request.Header.Add("Content-Length", strconv.FormatInt(request.ContentLength, 10))
+
+	response, err := client.Do(request)
+	if err != nil {
+		log.Fatalf("Unable to retrieve files: %v", err)
+		return
+	}
+
+	body, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		log.Fatalf("Unable to read Google API response: %v", err)
+		return
+	}
+
+	//fmt.Println(string(body))
+
+	newPath := "C:/Users/pedro/go/src/SincroNice/server/tmp/imag.jpg"
+	newBlock, err := os.Create(newPath)
+	defer newBlock.Close()
+	chk(err)
+	_, err = newBlock.Write(body)
+	newBlock.Sync()
+	chk(err)
+
+	fileName := "C:/Users/pedro/go/src/SincroNice/server/tmp/prueba"
+
+	fmt.Println("Downloading file...")
+
+	f, err := os.Create(fileName)
+	if err != nil {
+		fmt.Printf("create file: %v", err)
+		return
+	}
+	defer f.Close()
+
+	c := http.Client{
+		CheckRedirect: func(r *http.Request, via []*http.Request) error {
+			r.URL.Opaque = r.URL.Path
+			return nil
+		},
+	}
+
+	url := "https://docs.google.com/uc?export=download&id=1VzxtfawXQmjfCONjssKV_-OlmOevakRY"
+	r, err := c.Get(url)
+	if err != nil {
+		fmt.Printf("Error while downloading %q: %v", url, err)
+		return
+	}
+	defer r.Body.Close()
+	fmt.Println(r.Status)
+
+	n, err := io.Copy(f, r.Body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(n, "bytes downloaded")
+
 }
