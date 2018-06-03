@@ -157,6 +157,16 @@ func getFolder(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func deleteFolderFiles(folderFiles map[string]string) {
+	for key := range files {
+		for key2 := range folderFiles {
+			if key == key2 {
+				delete(files, key)
+			}
+		}
+	}
+}
+
 func deleteSubFolders(subFolders map[string]string) {
 	for key, value := range folders {
 		for key2 := range subFolders {
@@ -248,7 +258,12 @@ func deleteFolder(w http.ResponseWriter, req *http.Request) {
 				r.Msg = "Hemos eliminado la carpeta"
 				for key, value := range folders {
 					if key == folderID {
-						deleteSubFolders(folder.Folders)
+						if len(folder.Folders) > 0 {
+							deleteSubFolders(folder.Folders)
+						}
+						if len(folder.Files) > 0 {
+							deleteFolderFiles(folder.Files)
+						}
 						delete(folders, key)
 					}
 					delete(value.Folders, folderID)
