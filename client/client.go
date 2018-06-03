@@ -29,8 +29,8 @@ var baseURL = "https://localhost:8081"
 var client *http.Client
 
 var usuario types.User
-
 var folder types.Folder
+var file types.File
 
 func chk(e error) {
 	if e != nil {
@@ -230,6 +230,27 @@ func getFolder(id string) bool {
 	return false
 }
 
+func getFile(id string) bool {
+	data := url.Values{}
+	data.Set("id", crypto.Encode64([]byte(usuario.ID)))
+	data.Set("token", crypto.Encode64([]byte(usuario.Token)))
+	data.Set("fileID", crypto.Encode64([]byte(id)))
+
+	response := send("/u/{usuario.ID}/files/{id}", data)
+	bData, err := ioutil.ReadAll(response.Body)
+	chk(err)
+	var rData types.File
+	err = json.Unmarshal(bData, &rData)
+	chk(err)
+
+	if rData.Versions != nil {
+		file = rData
+		return true
+	}
+	color.Red("Error al recuperar el archivo: %v\n\n", rData)
+	return false
+}
+
 func crearCarpeta(actualFolder string) bool {
 	color.Set(color.FgYellow)
 	fmt.Printf("Introduzca el nombre de la carpeta: ")
@@ -304,7 +325,7 @@ func deleteFile(id string, name string) bool {
 	data.Set("token", crypto.Encode64([]byte(usuario.Token)))
 	data.Set("file", crypto.Encode64([]byte(id)))
 
-	response := send("/u/{usuario.ID}/files/{name}", data)
+	response := send("/u/{usuario.ID}/files/delete/{id}", data)
 	bData, err := ioutil.ReadAll(response.Body)
 	chk(err)
 
@@ -324,15 +345,91 @@ func deleteFile(id string, name string) bool {
 	return false
 }
 
+func downloadFile() bool {
+	match := false
+	opt := ""
+	version := ""
+
+	color.Set(color.FgYellow)
+	fmt.Printf("\n---------------------------------------------------")
+	fmt.Printf("\n¿Qué versión del archivo ")
+	color.Unset()
+	fmt.Printf(file.Name)
+	color.Yellow(" quiere descargar?\n")
+	color.Yellow("---------------------------------------------------")
+	for opt != "q" && opt != "Q" {
+		if len(file.Versions) != 0 {
+			color.Set(color.FgHiBlue)
+			for key, value := range file.Versions {
+				fmt.Println(key+1, "- "+value.Created)
+			}
+			color.Unset()
+		}
+		color.Set(color.FgYellow)
+		fmt.Println("---------------------------------------------------")
+		fmt.Println("(Q)uit.")
+		fmt.Printf("Opcion: ")
+		color.Unset()
+		fmt.Scanf("%s\n", &opt)
+		if opt != "q" && opt != "Q" {
+			iter, err := strconv.Atoi(opt)
+			if err != nil {
+				color.Yellow("\n---------------------------------------------------")
+				color.Red("Debes introducir un número de la lista o Q, ha introducido " + opt)
+				color.Yellow("---------------------------------------------------\n")
+			} else {
+				for key, value := range file.Versions {
+					if key == iter-1 {
+						match = true
+						version = value.ID
+					}
+				}
+				if !match {
+					color.Yellow("\n---------------------------------------------------")
+					color.Red("La opción introducida no existe, debe escoger de entre la lista")
+					color.Yellow("---------------------------------------------------\n")
+				} else {
+					color.Yellow("\nDescargando el archivo con el nombre %s...", file.Name)
+					data := url.Values{}
+					data.Set("user", crypto.Encode64([]byte(usuario.ID)))
+					data.Set("token", crypto.Encode64([]byte(usuario.Token)))
+					data.Set("file", crypto.Encode64([]byte(file.ID)))
+					data.Set("version", crypto.Encode64([]byte(version)))
+
+					response := send("/u/{usuario.ID}/files/{name}/versions/{version}", data)
+					bData, err := ioutil.ReadAll(response.Body)
+					chk(err)
+
+					var rData types.Version
+					err = json.Unmarshal(bData, &rData)
+					chk(err)
+
+					if rData.ID == version {
+						color.Yellow("\n---------------------------------------------------")
+						color.Green("El archivo con el nombre " + file.Name + " se ha descargado correctamente.")
+						color.Yellow("---------------------------------------------------\n")
+						return true
+					}
+					color.Yellow("\n---------------------------------------------------")
+					color.Red("\nError al borrar el archivoasdasdas: %v", rData)
+					color.Yellow("---------------------------------------------------\n")
+					return false
+				}
+			}
+		}
+		return false
+	}
+	return false
+}
+
 func exploredUnit(mainfolder string) {
 	opt := ""
 	i := 1
 	match := false
+	matchFile := false
 	error := false
 	var foldersIds map[int][]string
 	var filesIds map[int][]string
-	foldersIds = make(map[int][]string)
-	filesIds = make(map[int][]string)
 	folderID := mainfolder
 	folderName := "my-unit"
 	fileID := ""
@@ -340,14 +437,15 @@ func exploredUnit(mainfolder string) {
 	for opt != "q" {
 		i = 1
 
+		foldersIds = make(map[int][]string)
+		filesIds = make(map[int][]string)
+
 		if !error {
 			_ = getFolder(folderID)
 			folderName = folder.Name
 		}
 
-		match = false
-
-		if len(folder.Folders) != 0 {
+		if len(folder.Folders) != 0 && !matchFile {
 			color.Set(color.FgHiBlue)
 			for key, value := range folder.Folders {
 				fmt.Println(i, "- "+value+" ("+key+")")
@@ -366,7 +464,6 @@ func exploredUnit(mainfolder string) {
 		if len(folder.Folders) == 0 && len(folder.Files) == 0 {
 			color.Red("---- No hay directorios ni archivos ----")
 		}
-
 		if fileID == "" {
 			color.Set(color.FgYellow)
 			fmt.Println("---------------------------------------------------")
@@ -388,30 +485,34 @@ func exploredUnit(mainfolder string) {
 					color.Red("Debes introducir un número de la lista o q, ha introducido " + opt)
 					color.Yellow("---------------------------------------------------\n")
 				} else {
+					match = false
 					for key, value := range foldersIds {
 						if key == iter {
 							i = 1
 							match = true
+							matchFile = false
 							folderID = value[0]
 							folderName = value[1]
 							error = false
 						}
 					}
-					for key, value := range filesIds {
-						if key == iter {
+					if !match {
+						for key, value := range filesIds {
+							if key == iter {
+								i = 1
+								matchFile = true
+								fileID = value[0]
+								fileName = value[1]
+								error = true
+							}
+						}
+						if !matchFile {
+							color.Yellow("\n---------------------------------------------------")
+							color.Red("La opción introducida no existe, debe escoger de entre la lista")
+							color.Yellow("---------------------------------------------------\n")
 							i = 1
-							match = true
-							fileID = value[0]
-							fileName = value[1]
 							error = true
 						}
-					}
-					if !match {
-						color.Yellow("\n---------------------------------------------------")
-						color.Red("La opción introducida no existe, debe escoger de entre la lista")
-						color.Yellow("---------------------------------------------------\n")
-						i = 1
-						error = true
 					}
 				}
 			} else {
@@ -438,10 +539,13 @@ func exploredUnit(mainfolder string) {
 				}
 			}
 		} else {
-			fileMenu(fileID, fileName)
+			if getFile(fileID) {
+				fileMenu(fileID, fileName)
+			}
 			fileID = ""
 			fileName = ""
 			error = false
+			matchFile = false
 		}
 	}
 }
@@ -449,14 +553,13 @@ func exploredUnit(mainfolder string) {
 func fileMenu(id string, name string) {
 	opt := ""
 
-	color.Set(color.FgYellow)
-	fmt.Printf("\n---------------------------------------------------")
-	fmt.Printf("\n¿Qué desea hacer con el archvio ")
-	color.Unset()
-	fmt.Printf(name)
-	color.Yellow("?\n")
-
 	for opt != "q" && opt != "Q" {
+		color.Set(color.FgYellow)
+		fmt.Printf("\n---------------------------------------------------")
+		fmt.Printf("\n¿Qué desea hacer con el archvio ")
+		color.Unset()
+		fmt.Printf(name)
+		color.Yellow("?\n")
 		color.Set(color.FgYellow)
 		fmt.Println("---------------------------------------------------")
 		fmt.Println("(B)orrar archivo.")
@@ -469,8 +572,7 @@ func fileMenu(id string, name string) {
 			opt = strings.ToUpper(opt)
 			switch opt {
 			case "D":
-				fmt.Println("\nDescargando...")
-				opt = "q"
+				downloadFile()
 			case "B":
 				deleteFile(id, name)
 				opt = "q"
