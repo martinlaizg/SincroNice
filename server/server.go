@@ -79,6 +79,46 @@ func getMainFolder(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func getFile(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := string(crypto.Decode64(req.Form.Get("id")))
+	fileID := string(crypto.Decode64(req.Form.Get("fileID")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
+
+	user, exist := users[userID]
+	if !exist {
+		r.Status = false
+		r.Msg = "El usuario al que se intenta acceder no existe."
+		response(w, r)
+		log.Printf("Fail access to user %s", user.Email)
+	} else {
+		if chkToken(token, userID) {
+			file, exist := files[fileID]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene el archivo que está buscando."
+				response(w, r)
+				log.Printf("Fail access to file of user %s", user.Email)
+			} else {
+				if file.OwnerID == user.ID {
+					r.Status = true
+					r.Msg = "Hemos encontrado el archivo"
+					json.NewEncoder(w).Encode(file)
+					log.Printf("The user %s has correctly accessed the file %s", user.Email, file.Name)
+				} else {
+					r.Status = false
+					r.Msg = "No tienes permiso para ver el archivo"
+					response(w, r)
+					log.Printf("Fail access to user %s to file %s", user.Email, file.Name)
+				}
+			}
+		}
+	}
+}
+
 func getFolder(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	r := types.Response{}
@@ -117,6 +157,16 @@ func getFolder(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func deleteFolderFiles(folderFiles map[string]string) {
+	for key := range files {
+		for key2 := range folderFiles {
+			if key == key2 {
+				delete(files, key)
+			}
+		}
+	}
+}
+
 func deleteSubFolders(subFolders map[string]string) {
 	for key, value := range folders {
 		for key2 := range subFolders {
@@ -127,6 +177,54 @@ func deleteSubFolders(subFolders map[string]string) {
 					delete(folders, key)
 				}
 				delete(folders, key)
+			}
+		}
+	}
+}
+
+func deleteFile(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := string(crypto.Decode64(req.Form.Get("user")))
+	fileID := string(crypto.Decode64(req.Form.Get("file")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
+
+	user, exist := users[userID]
+	if !exist {
+		r.Status = false
+		r.Msg = "El usuario al que se intenta acceder no existe."
+		response(w, r)
+		log.Printf("Fail access to user %s", user.Email)
+	} else {
+		if chkToken(token, userID) {
+			file, exist := files[fileID]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene el archivo que está buscando."
+				response(w, r)
+				log.Printf("Fail access to file of user %s", user.Email)
+			} else {
+				if file.OwnerID == user.ID {
+					r.Status = true
+					r.Msg = "Hemos eliminado el archivo"
+					delete(files, file.ID)
+					for _, folder := range folders {
+						for id := range folder.Files {
+							if id == fileID {
+								delete(folder.Files, fileID)
+							}
+						}
+					}
+					json.NewEncoder(w).Encode(file)
+					log.Printf("The user %s has correctly deleted the file %s", user.Email, file.Name)
+				} else {
+					r.Status = false
+					r.Msg = "No tienes permiso para eliminar el archivo"
+					response(w, r)
+					log.Printf("Fail access to user %s to file %s", user.Email, file.Name)
+				}
 			}
 		}
 	}
@@ -160,7 +258,12 @@ func deleteFolder(w http.ResponseWriter, req *http.Request) {
 				r.Msg = "Hemos eliminado la carpeta"
 				for key, value := range folders {
 					if key == folderID {
-						deleteSubFolders(folder.Folders)
+						if len(folder.Folders) > 0 {
+							deleteSubFolders(folder.Folders)
+						}
+						if len(folder.Files) > 0 {
+							deleteFolderFiles(folder.Files)
+						}
 						delete(folders, key)
 					}
 					delete(value.Folders, folderID)
@@ -391,14 +494,60 @@ func uploadFile(w http.ResponseWriter, req *http.Request) {
 		log.Println("Creado nuevo fichero")
 	} else {
 		newVersion := types.Version{
-			ID:     newFile.Versions[0].ID,
-			Blocks: newFile.Versions[0].Blocks}
+			ID:      newFile.Versions[0].ID,
+			Created: time.Now().UTC().String(),
+			Blocks:  newFile.Versions[0].Blocks}
 		file.Versions = append(file.Versions, newVersion)
 		files[fileID] = file
 		log.Println("Añadida nueva versión al fichero ya existente")
 	}
 
 	response(w, r)
+}
+
+func downloadFile(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := string(crypto.Decode64(req.Form.Get("user")))
+	fileID := string(crypto.Decode64(req.Form.Get("file")))
+	versionID := string(crypto.Decode64(req.Form.Get("version")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
+
+	user, exist := users[userID]
+	if !exist {
+		r.Status = false
+		r.Msg = "El usuario al que se intenta acceder no existe."
+		response(w, r)
+		log.Printf("Fail access to user %s", user.Email)
+	} else {
+		if chkToken(token, userID) {
+			file, exist := files[fileID]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene el archivo que está buscando."
+				response(w, r)
+				log.Printf("Fail access to file of user 1 %s", user.Email)
+			} else {
+				if file.OwnerID == user.ID {
+					for _, value := range file.Versions {
+						if value.ID == versionID {
+							r.Status = true
+							r.Msg = "Hemos encontrado el archivo"
+							json.NewEncoder(w).Encode(value)
+							log.Printf("The user %s has correctly download the file %s", user.Email, file.Name)
+						}
+					}
+				} else {
+					r.Status = false
+					r.Msg = "No tienes permiso para ver el archivo"
+					response(w, r)
+					log.Printf("Fail access to user %s to file 2 %s", user.Email, file.Name)
+				}
+			}
+		}
+	}
 }
 
 // RunServer : run sincronice server
@@ -427,11 +576,13 @@ func main() {
 	router.HandleFunc("/checkBlock", checkBlock)
 	router.HandleFunc("/uploadBlock", uploadBlock)
 	router.HandleFunc("/u/{id}/my-unit", getMainFolder)
+	router.HandleFunc("/u/{id}/files/{fileID}", getFile)
 	router.HandleFunc("/u/{id}/folders/{folderId}", getFolder)
 	router.HandleFunc("/u/{id}/folders/{folderId}/upload", uploadFile)
 	router.HandleFunc("/u/{id}/folders", createFolder)
 	router.HandleFunc("/u/{id}/folders/delete/{folderId}", deleteFolder)
-	router.HandleFunc("/checkBlock", checkBlock)
+	router.HandleFunc("/u/{id}/files/{fileID}/versions/{versionID}", downloadFile)
+	router.HandleFunc("/u/{id}/files/delete/{fileID}", deleteFile)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 
