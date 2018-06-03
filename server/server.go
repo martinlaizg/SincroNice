@@ -79,6 +79,46 @@ func getMainFolder(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func getFile(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := string(crypto.Decode64(req.Form.Get("id")))
+	fileID := string(crypto.Decode64(req.Form.Get("fileID")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
+
+	user, exist := users[userID]
+	if !exist {
+		r.Status = false
+		r.Msg = "El usuario al que se intenta acceder no existe."
+		response(w, r)
+		log.Printf("Fail access to user %s", user.Email)
+	} else {
+		if chkToken(token, userID) {
+			file, exist := files[fileID]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene el archivo que está buscando."
+				response(w, r)
+				log.Printf("Fail access to file of user %s", user.Email)
+			} else {
+				if file.OwnerID == user.ID {
+					r.Status = true
+					r.Msg = "Hemos encontrado el archivo"
+					json.NewEncoder(w).Encode(file)
+					log.Printf("The user %s has correctly accessed the file %s", user.Email, file.Name)
+				} else {
+					r.Status = false
+					r.Msg = "No tienes permiso para ver el archivo"
+					response(w, r)
+					log.Printf("Fail access to user %s to file %s", user.Email, file.Name)
+				}
+			}
+		}
+	}
+}
+
 func getFolder(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	r := types.Response{}
@@ -152,9 +192,9 @@ func deleteFile(w http.ResponseWriter, req *http.Request) {
 			file, exist := files[fileID]
 			if !exist {
 				r.Status = false
-				r.Msg = "El usuario " + user.Email + " no tiene carpeta principal."
+				r.Msg = "El usuario " + user.Email + " no tiene el archivo que está buscando."
 				response(w, r)
-				log.Printf("Fail access to main folder of user %s", user.Email)
+				log.Printf("Fail access to file of user %s", user.Email)
 			} else {
 				if file.OwnerID == user.ID {
 					r.Status = true
@@ -450,6 +490,51 @@ func uploadFile(w http.ResponseWriter, req *http.Request) {
 	response(w, r)
 }
 
+func downloadFile(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	r := types.Response{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := string(crypto.Decode64(req.Form.Get("user")))
+	fileID := string(crypto.Decode64(req.Form.Get("file")))
+	versionID := string(crypto.Decode64(req.Form.Get("version")))
+	token := string(crypto.Decode64(req.Form.Get("token")))
+
+	user, exist := users[userID]
+	if !exist {
+		r.Status = false
+		r.Msg = "El usuario al que se intenta acceder no existe."
+		response(w, r)
+		log.Printf("Fail access to user %s", user.Email)
+	} else {
+		if chkToken(token, userID) {
+			file, exist := files[fileID]
+			if !exist {
+				r.Status = false
+				r.Msg = "El usuario " + user.Email + " no tiene el archivo que está buscando."
+				response(w, r)
+				log.Printf("Fail access to file of user 1 %s", user.Email)
+			} else {
+				if file.OwnerID == user.ID {
+					for _, value := range file.Versions {
+						if value.ID == versionID {
+							r.Status = true
+							r.Msg = "Hemos encontrado el archivo"
+							json.NewEncoder(w).Encode(value)
+							log.Printf("The user %s has correctly download the file %s", user.Email, file.Name)
+						}
+					}
+				} else {
+					r.Status = false
+					r.Msg = "No tienes permiso para ver el archivo"
+					response(w, r)
+					log.Printf("Fail access to user %s to file 2 %s", user.Email, file.Name)
+				}
+			}
+		}
+	}
+}
+
 // RunServer : run sincronice server
 func main() {
 	log.Printf("Servidor a la espera de peticiones.")
@@ -475,11 +560,13 @@ func main() {
 	router.HandleFunc("/checkBlock", checkBlock)
 	router.HandleFunc("/uploadBlock", uploadBlock)
 	router.HandleFunc("/u/{id}/my-unit", getMainFolder)
+	router.HandleFunc("/u/{id}/files/{fileID}", getFile)
 	router.HandleFunc("/u/{id}/folders/{folderId}", getFolder)
 	router.HandleFunc("/u/{id}/folders/{folderId}/upload", uploadFile)
 	router.HandleFunc("/u/{id}/folders", createFolder)
 	router.HandleFunc("/u/{id}/folders/delete/{folderId}", deleteFolder)
-	router.HandleFunc("/u/{id}/files/{fileID}", deleteFile)
+	router.HandleFunc("/u/{id}/files/{fileID}/versions/{versionID}", downloadFile)
+	router.HandleFunc("/u/{id}/files/delete/{fileID}", deleteFile)
 
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 
