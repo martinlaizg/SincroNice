@@ -400,18 +400,35 @@ func downloadFile() bool {
 					bData, err := ioutil.ReadAll(response.Body)
 					chk(err)
 
-					var rData types.Version
+					var rData []byte
 					err = json.Unmarshal(bData, &rData)
 					chk(err)
 
-					if rData.ID == version {
+					if rData != nil {
+						filename := "Descargas/" + file.Name
+						f, err := os.OpenFile(
+							filename,
+							os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
+							0777,
+						)
+						if err != nil {
+							log.Fatal(err)
+							return false
+						}
+						defer f.Close()
+
+						_, err = f.Write(rData)
+						if err != nil {
+							log.Fatal(err)
+							return false
+						}
 						color.Yellow("\n---------------------------------------------------")
 						color.Green("El archivo con el nombre " + file.Name + " se ha descargado correctamente.")
 						color.Yellow("---------------------------------------------------\n")
 						return true
 					}
 					color.Yellow("\n---------------------------------------------------")
-					color.Red("\nError al borrar el archivoasdasdas: %v", rData)
+					color.Red("\nError al descargar el archivo: %v", file.Name)
 					color.Yellow("---------------------------------------------------\n")
 					return false
 				}

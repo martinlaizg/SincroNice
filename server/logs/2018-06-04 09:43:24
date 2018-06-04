@@ -1,0 +1,6 @@
+2018/06/04 09:43:24 Running server...
+2018/06/04 09:43:24 Loading data from JSON...
+2018/06/04 09:43:24 Data loaded
+2018/06/04 09:43:24 Running server on port: 8081
+2018/06/04 09:43:27 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/04 09:43:36 Unable to rename(update) uploaded file in Drive:  googleapi: Error 403: The parents field is not directly writable in update requests. Use the addParents and removeParents parameters instead., fieldNotWritable

@@ -1,0 +1,52 @@
+2018/06/04 09:40:25 Running server...
+2018/06/04 09:40:25 Loading data from JSON...
+2018/06/04 09:40:25 Data loaded
+2018/06/04 09:40:25 Running server on port: 8081
+2018/06/04 09:40:28 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/04 09:40:37 http: panic serving 127.0.0.1:43168: runtime error: invalid memory address or nil pointer dereference
+goroutine 8 [running]:
+net/http.(*conn).serve.func1(0xc420136fa0)
+	/usr/lib/go-1.10/src/net/http/server.go:1726 +0xd0
+panic(0x6e4f60, 0x8f1be0)
+	/usr/lib/go-1.10/src/runtime/panic.go:502 +0x229
+github.com/antonholmquist/jason.(*Object).GetString(0x0, 0xc4201557b8, 0x1, 0x1, 0x0, 0x0, 0x0, 0xc420021080)
+	/home/canocles/go/src/github.com/antonholmquist/jason/jason.go:231 +0x26
+main.uploadBlock(0x7898c0, 0xc4201602a0, 0xc420170800)
+	/home/canocles/go/src/SincroNice/server/server.go:452 +0x104b
+net/http.HandlerFunc.ServeHTTP(0x75f9c8, 0x7898c0, 0xc4201602a0, 0xc420170800)
+	/usr/lib/go-1.10/src/net/http/server.go:1947 +0x44
+github.com/gorilla/mux.(*Router).ServeHTTP(0xc42008aa10, 0x7898c0, 0xc4201602a0, 0xc420170800)
+	/home/canocles/go/src/github.com/gorilla/mux/mux.go:162 +0xed
+net/http.serverHandler.ServeHTTP(0xc420075520, 0x7898c0, 0xc4201602a0, 0xc420170600)
+	/usr/lib/go-1.10/src/net/http/server.go:2694 +0xbc
+net/http.(*conn).serve(0xc420136fa0, 0x789b40, 0xc42005e8c0)
+	/usr/lib/go-1.10/src/net/http/server.go:1830 +0x651
+created by net/http.(*Server).Serve
+	/usr/lib/go-1.10/src/net/http/server.go:2795 +0x27b
+2018/06/04 09:41:19 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/04 09:41:32 http: panic serving 127.0.0.1:43176: runtime error: invalid memory address or nil pointer dereference
+goroutine 26 [running]:
+net/http.(*conn).serve.func1(0xc42044a820)
+	/usr/lib/go-1.10/src/net/http/server.go:1726 +0xd0
+panic(0x6e4f60, 0x8f1be0)
+	/usr/lib/go-1.10/src/runtime/panic.go:502 +0x229
+github.com/antonholmquist/jason.(*Object).GetString(0x0, 0xc4202d37b8, 0x1, 0x1, 0x0, 0x0, 0x0, 0xc42051c040)
+	/home/canocles/go/src/github.com/antonholmquist/jason/jason.go:231 +0x26
+main.uploadBlock(0x7898c0, 0xc4204aaa80, 0xc420170b00)
+	/home/canocles/go/src/SincroNice/server/server.go:452 +0x104b
+net/http.HandlerFunc.ServeHTTP(0x75f9c8, 0x7898c0, 0xc4204aaa80, 0xc420170b00)
+	/usr/lib/go-1.10/src/net/http/server.go:1947 +0x44
+github.com/gorilla/mux.(*Router).ServeHTTP(0xc42008aa10, 0x7898c0, 0xc4204aaa80, 0xc420170b00)
+	/home/canocles/go/src/github.com/gorilla/mux/mux.go:162 +0xed
+net/http.serverHandler.ServeHTTP(0xc420075520, 0x7898c0, 0xc4204aaa80, 0xc420170700)
+	/usr/lib/go-1.10/src/net/http/server.go:2694 +0xbc
+net/http.(*conn).serve(0xc42044a820, 0x789b40, 0xc42037a200)
+	/usr/lib/go-1.10/src/net/http/server.go:1830 +0x651
+created by net/http.(*Server).Serve
+	/usr/lib/go-1.10/src/net/http/server.go:2795 +0x27b
+2018/06/04 09:43:00 
+
+Shutdown server...
+2018/06/04 09:43:00 Servidor detenido correctamente
+2018/06/04 09:43:00 Saving data to JSON...
+2018/06/04 09:43:00 Data saved

@@ -1,0 +1,14 @@
+2018/06/04 09:58:29 Running server...
+2018/06/04 09:58:29 Loading data from JSON...
+2018/06/04 09:58:29 Data loaded
+2018/06/04 09:58:29 Running server on port: 8081
+2018/06/04 09:58:32 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/04 09:58:34 The user rmm118@gcloud.ua.es has correctly accessed the file K.jpg
+2018/06/04 09:58:54 The user rmm118@gcloud.ua.es has correctly accessed the folder my-unit
+2018/06/04 09:58:55 The user rmm118@gcloud.ua.es has correctly accessed the file K.jpg
+2018/06/04 09:59:11 
+
+Shutdown server...
+2018/06/04 09:59:11 Servidor detenido correctamente
+2018/06/04 09:59:11 Saving data to JSON...
+2018/06/04 09:59:11 Data saved
