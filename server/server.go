@@ -707,11 +707,11 @@ func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 }
 
 func tokenCacheFile() (string, error) {
-	usr, err := user.Current()
+	_, err := user.Current()
 	if err != nil {
 		return "", err
 	}
-	tokenCacheDir := filepath.Join(usr.HomeDir, ".credentials")
+	tokenCacheDir := "./credentials"
 	os.MkdirAll(tokenCacheDir, 0700)
 	return filepath.Join(tokenCacheDir,
 		url.QueryEscape("token.json")), err
