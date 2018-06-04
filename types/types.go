@@ -61,8 +61,6 @@ type File struct {
 // Version : versión
 type Version struct {
 	ID      string
-	Ctime   time.Time
-	Atime   time.Time
 	Mtime   time.Time
 	Created time.Time
 	Author  string
