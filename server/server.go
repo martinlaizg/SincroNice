@@ -20,10 +20,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antonholmquist/jason"
 	"github.com/gorilla/mux"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	drive "google.golang.org/api/drive/v2"
+	drive "google.golang.org/api/drive/v3"
 )
 
 var (
@@ -369,14 +370,6 @@ func uploadBlock(w http.ResponseWriter, req *http.Request) {
 		Owner: userID}
 	blocks[blockT.ID] = blockT
 
-	//newPath := uploadPath + blockID
-	//newBlock, err := os.Create(newPath)
-	//defer newBlock.Close()
-	//chk(err)
-	//_, err = newBlock.Write(blockBytes)
-	//newBlock.Sync()
-	//chk(err)
-
 	//Subimos al drive
 	ctx := context.Background()
 	// process the credential file
@@ -391,6 +384,11 @@ func uploadBlock(w http.ResponseWriter, req *http.Request) {
 	}
 
 	client := getClient(ctx, config)
+
+	driveClientService, err := drive.New(client)
+	if err != nil {
+		log.Fatalf("Unable to initiate new Drive client: %v", err)
+	}
 
 	cacheFile, err := tokenCacheFile()
 	if err != nil {
@@ -417,8 +415,7 @@ func uploadBlock(w http.ResponseWriter, req *http.Request) {
 		"} \n\n" +
 		"--" + boundary + "\n" +
 		"Content-Type:" + fileMIMEType + "\n\n" +
-		string(blockBytes) + "\n" +
-
+		string(blockBytes) + "\n\n" +
 		"--" + boundary + "--")
 
 	// post to Drive with RESTful method
@@ -435,8 +432,6 @@ func uploadBlock(w http.ResponseWriter, req *http.Request) {
 		fmt.Printf("An error occurred: %v\n", err)
 	}
 
-	fmt.Printf(string(body))
-
 	if err != nil {
 		log.Fatalf("Unable to be post to Google API: %v", err)
 		r.Status = false
@@ -445,6 +440,18 @@ func uploadBlock(w http.ResponseWriter, req *http.Request) {
 	}
 	defer response2.Body.Close()
 
+	jsonAPIreply, _ := jason.NewObjectFromBytes(body)
+	uploadedFileID, _ := jsonAPIreply.GetString("id")
+
+	var parents []string
+	parents = append(parents, "1lz1377WVZLdOnfT8FgB7dxoyHPIygh7R")
+
+	file := drive.File{Name: blockID}
+	_, err = driveClientService.Files.Update(uploadedFileID, &file).AddParents("1lz1377WVZLdOnfT8FgB7dxoyHPIygh7R").Do()
+
+	if err != nil {
+		log.Fatalf("Unable to rename(update) uploaded file in Drive:  %v", err)
+	}
 	r.Status = true
 	response(w, r)
 }
@@ -533,10 +540,23 @@ func downloadFile(w http.ResponseWriter, req *http.Request) {
 				if file.OwnerID == user.ID {
 					for _, value := range file.Versions {
 						if value.ID == versionID {
+							blocksDownload := value.Blocks
+							var blocks []string
+							for _, idBlock := range blocksDownload {
+								correcto, idDrive := storeTMP(idBlock)
+								if !correcto {
+									r.Status = false
+									r.Msg = "No se puede abrir el archivo " + file.Name
+									response(w, r)
+									return
+								}
+								blocks = append(blocks, idDrive)
+							}
+
+							// []byte de todos los bloques
+							json.NewEncoder(w).Encode(createFile(blocks))
 							r.Status = true
-							r.Msg = "Hemos encontrado el archivo"
-							json.NewEncoder(w).Encode(value)
-							log.Printf("The user %s has correctly download the file %s", user.Email, file.Name)
+							r.Msg = "archivo cargado correctamente"
 						}
 					}
 				} else {
@@ -554,7 +574,7 @@ func downloadFile(w http.ResponseWriter, req *http.Request) {
 func main() {
 	currentTime := time.Now()
 	log.Printf("Servidor a la espera de peticiones.")
-	f, err := os.OpenFile(currentTime.Format("2006-01-02 15:04:05"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	f, err := os.OpenFile(currentTime.Format("logs/2006-01-02 15:04:05"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -656,110 +676,6 @@ func randToken(len int) string {
 	return fmt.Sprintf("%x", b)
 }
 
-func uploadDriveHandler(w http.ResponseWriter, req *http.Request) {
-
-	req.ParseMultipartForm(1)
-	r := types.Response{}
-	w.Header().Set("Content-Type", "application/json")
-	blockID := string(crypto.Decode64(req.PostFormValue("blockID")))
-	userID := string(crypto.Decode64(req.PostFormValue("userID")))
-	block, _, err := req.FormFile("fileupload") // Obtenemos el fichero
-	defer block.Close()
-	chk(err)
-
-	blockBytes, err := ioutil.ReadAll(block) // Lo pasamos a bytes
-	chk(err)
-
-	hash := crypto.Hash(blockBytes)
-
-	blockT := types.Block{
-		ID:    blockID,
-		Hash:  hash[:],
-		Owner: userID,
-	}
-	blocks[blockT.ID] = blockT
-
-	r.Status = true
-	response(w, r)
-
-	//upload drive
-	ctx := context.Background()
-	// process the credential file
-	credential, err := ioutil.ReadFile("client_secret.json")
-	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
-	}
-
-	config, err := google.ConfigFromJSON(credential, drive.DriveScope)
-	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
-	}
-
-	client := getClient(ctx, config)
-
-	cacheFile, err := tokenCacheFile()
-	if err != nil {
-		log.Fatalf("Unable to get path to cached credential file. %v", err)
-	}
-
-	token, err := tokenFromFile(cacheFile)
-	if err != nil {
-		log.Fatalf("Unable to get token from file. %v", err)
-	}
-
-	//id := "1SXfqr0Jm6iEe04W5BGvo2X57pYvatDjY"
-	//DownloadFile(client, id)
-
-	/*fileBytes, err := ioutil.ReadFile(ruta + blockID)
-	if err != nil {
-		log.Fatalf("Unable to read file for upload: %v", err)
-	}*/
-
-	fileMIMEType := http.DetectContentType(blockBytes)
-
-	postURL := "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
-	authToken := token.AccessToken
-
-	boundary := randStr(32, "alphanum")
-
-	uploadData := []byte("\n" +
-		"--" + boundary + "\n" +
-		"Content-Type: application/json; charset=" + string('"') + "UTF-8" + string('"') + "\n\n" +
-		"{ \n" +
-		string('"') + "name" + string('"') + ":" + string('"') + blockID + string('"') + "\n" +
-		"} \n\n" +
-		"--" + boundary + "\n" +
-		"Content-Type:" + fileMIMEType + "\n\n" +
-		string(blockBytes) + "\n" +
-
-		"--" + boundary + "--")
-
-	// post to Drive with RESTful method
-	request, _ := http.NewRequest("POST", postURL, strings.NewReader(string(uploadData)))
-	request.Header.Add("Host", "www.googleapis.com")
-	request.Header.Add("Authorization", "Bearer "+authToken)
-	request.Header.Add("Content-Type", "multipart/related; boundary="+string('"')+boundary+string('"'))
-	request.Header.Add("Content-Length", strconv.FormatInt(request.ContentLength, 10))
-
-	response, err := client.Do(request)
-	if err != nil {
-		log.Fatalf("Unable to be post to Google API: %v", err)
-		return
-	}
-
-	defer response.Body.Close()
-	//body, err := ioutil.ReadAll(response.Body)
-
-	/*if err != nil {
-		log.Fatalf("Unable to read Google API response: %v", err)
-		return
-	}*/
-
-	//	fmt.Println(string(body))
-
-	log.Println("File " + blockID + " upload successful")
-}
-
 func getClient(ctx context.Context, config *oauth2.Config) *http.Client {
 	cacheFile, err := tokenCacheFile()
 	if err != nil {
@@ -798,7 +714,7 @@ func tokenCacheFile() (string, error) {
 	tokenCacheDir := filepath.Join(usr.HomeDir, ".credentials")
 	os.MkdirAll(tokenCacheDir, 0700)
 	return filepath.Join(tokenCacheDir,
-		url.QueryEscape("google-drive-golang.json")), err
+		url.QueryEscape("token.json")), err
 }
 
 func tokenFromFile(file string) (*oauth2.Token, error) {
@@ -844,4 +760,123 @@ func randStr(strSize int, randType string) string {
 		bytes[k] = dictionary[v%byte(len(dictionary))]
 	}
 	return string(bytes)
+}
+
+// guarda un bloque en la carpeta tmp
+func storeTMP(id string) (bool, string) {
+
+	ctx := context.Background()
+	// process the credential file
+	credential, err := ioutil.ReadFile("client_secret.json")
+	if err != nil {
+		log.Fatalf("Unable to read client secret file: %v", err)
+		return false, ""
+	}
+
+	config, err := google.ConfigFromJSON(credential, drive.DriveMetadataReadonlyScope)
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+		return false, ""
+	}
+
+	client := getClient(ctx, config)
+	if err != nil {
+		log.Fatalf("Unable to retrieve Drive client: %v", err)
+		return false, ""
+	}
+
+	driveClientService, err := drive.New(client)
+	if err != nil {
+		log.Fatalf("Unable to initiate new Drive client: %v", err)
+	}
+
+	filesListCall, err := driveClientService.Files.List().Do()
+	if err != nil {
+		log.Fatalf("Unable to list files in Drive:  %v", err)
+		return false, ""
+	}
+	encontrado := false
+	idDrive := ""
+
+	for _, file := range filesListCall.Files {
+		if file.Name == id {
+			idDrive = file.Id
+			encontrado = true
+		}
+	}
+
+	if !encontrado {
+		fmt.Println("No se puede abrir el bloque")
+		return false, ""
+	}
+	fileName := "tmp/" + idDrive
+
+	f, err := os.Create(fileName)
+	if err != nil {
+		fmt.Printf("create file: %v", err)
+		return false, ""
+	}
+	defer f.Close()
+
+	c := http.Client{
+		CheckRedirect: func(r *http.Request, via []*http.Request) error {
+			r.URL.Opaque = r.URL.Path
+			return nil
+		},
+	}
+	url := "https://docs.google.com/uc?export=download&id=" + idDrive
+	r, err := c.Get(url)
+	if err != nil {
+		fmt.Printf("Error while downloading %q: %v", url, err)
+		return false, ""
+	}
+	defer r.Body.Close()
+
+	_, err = io.Copy(f, r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	return true, idDrive
+}
+
+// Función que borrar el contenido de la carpeta
+func RemoveContents(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(dir, name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func createFile(ids []string) []byte {
+	var fileT []byte
+	for _, id := range ids {
+		file, err := ioutil.ReadFile("tmp/" + id)
+		if err != nil {
+			fmt.Println("No se pudo abrir el archivo " + id)
+			return nil
+		}
+
+		for _, b := range file {
+			fileT = append(fileT, b)
+		}
+	}
+	err := RemoveContents("tmp/")
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	return fileT
 }
