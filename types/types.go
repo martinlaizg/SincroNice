@@ -1,6 +1,8 @@
 package types
 
 import (
+	"time"
+
 	"github.com/rs/xid"
 )
 
@@ -59,7 +61,11 @@ type File struct {
 // Version : versión
 type Version struct {
 	ID      string
-	Created string
+	Ctime   time.Time
+	Atime   time.Time
+	Mtime   time.Time
+	Created time.Time
+	Author  string
 	Blocks  []string
 }
 

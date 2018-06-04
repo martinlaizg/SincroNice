@@ -502,7 +502,10 @@ func uploadFile(w http.ResponseWriter, req *http.Request) {
 	} else {
 		newVersion := types.Version{
 			ID:      newFile.Versions[0].ID,
-			Created: time.Now().UTC().String(),
+			Atime:   newFile.Versions[0].Atime,
+			Ctime:   newFile.Versions[0].Ctime,
+			Mtime:   newFile.Versions[0].Mtime,
+			Created: newFile.Versions[0].Created,
 			Blocks:  newFile.Versions[0].Blocks}
 		file.Versions = append(file.Versions, newVersion)
 		files[fileID] = file

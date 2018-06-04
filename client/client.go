@@ -18,6 +18,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/fatih/color"
@@ -361,7 +362,7 @@ func downloadFile() bool {
 		if len(file.Versions) != 0 {
 			color.Set(color.FgHiBlue)
 			for key, value := range file.Versions {
-				fmt.Println(key+1, "- "+value.Created)
+				fmt.Println(key+1, "- "+value.Created.Format("2006-01-02 15:04:05"))
 			}
 			color.Unset()
 		}
@@ -378,10 +379,12 @@ func downloadFile() bool {
 				color.Red("Debes introducir un número de la lista o Q, ha introducido " + opt)
 				color.Yellow("---------------------------------------------------\n")
 			} else {
+				versionKey := 0
 				for key, value := range file.Versions {
 					if key == iter-1 {
 						match = true
 						version = value.ID
+						versionKey = key
 					}
 				}
 				if !match {
@@ -422,6 +425,7 @@ func downloadFile() bool {
 							log.Fatal(err)
 							return false
 						}
+						os.Chtimes(filename, file.Versions[versionKey].Atime, file.Versions[versionKey].Mtime)
 						color.Yellow("\n---------------------------------------------------")
 						color.Green("El archivo con el nombre " + file.Name + " se ha descargado correctamente.")
 						color.Yellow("---------------------------------------------------\n")
@@ -658,9 +662,13 @@ func uploadFile() bool {
 	var fileSize int64 = fileInfo.Size()
 	const fileChunk = 1 * (1 << 20) // 1 MB
 	totalPartsNum := uint64(math.Ceil(float64(fileSize) / float64(fileChunk)))
+	stat := fileInfo.Sys().(*syscall.Stat_t)
 	version := types.Version{
 		ID:      types.GenXid(),
-		Created: time.Now().UTC().String(),
+		Ctime:   time.Unix(int64(stat.Ctim.Sec), int64(stat.Ctim.Nsec)),
+		Atime:   time.Unix(int64(stat.Atim.Sec), int64(stat.Atim.Nsec)),
+		Mtime:   fileInfo.ModTime(),
+		Created: time.Now(),
 	}
 	color.Yellow("Subiendo archivo...")
 	for i := uint64(0); i < totalPartsNum; i++ {
