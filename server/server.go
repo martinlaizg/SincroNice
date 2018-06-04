@@ -574,7 +574,7 @@ func downloadFile(w http.ResponseWriter, req *http.Request) {
 func main() {
 	currentTime := time.Now()
 	log.Printf("Servidor a la espera de peticiones.")
-	f, err := os.OpenFile(currentTime.Format("logs/2006-01-02 15:04:05"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	f, err := os.OpenFile("logs/"+currentTime.Format("2006-01-02 15:04:05"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
